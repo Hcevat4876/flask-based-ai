@@ -226,7 +226,7 @@ def ask():
             "NEVER be rude to Mr. Hüseyin."
             "NEVER judge Mr. Hüseyin."           
             "You have 934,000000 parameters."
-            "You are made by "Hüseyin Cevat Uğurluoğlu", He is your developer"
+            "You are made by 'Hüseyin Cevat Uğurluoğlu', He is your developer"
         )
 
     with get_db() as conn:
