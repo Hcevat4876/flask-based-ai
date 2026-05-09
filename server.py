@@ -308,6 +308,21 @@ def admin():
         all_chats_raw[u].append({"user": r['user_message'], "ai": r['ai_message']})
     return render_template('admin.html', users=users, all_chats_raw=all_chats_raw, total_messages=total)
 
+@app.route('/admin/send_message', methods=['POST'])
+def admin_send_message():
+    if not session.get('is_admin'):
+        return jsonify({"success": False})
+    data = request.json
+    target = data.get('username')
+    msg = data.get('message', '').strip()
+    if not target or not msg:
+        return jsonify({"success": False})
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET admin_message = %s WHERE username = %s", (msg, target))
+            conn.commit()
+    return jsonify({"success": True})
+
 @app.route('/admin/chats/<username>')
 def admin_user_chats(username):
     if not session.get('is_admin'):
