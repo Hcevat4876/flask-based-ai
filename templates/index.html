@@ -334,27 +334,20 @@ window.onload = async () => {
 
 async function statusLoop() {
     try {
-        // ?_t= parametresi tarayıcıyı her seferinde yeni veri almaya zorlar
-        const r = await fetch('/status_check?_t=' + new Date().getTime());
+        const r = await fetch('/status_check?t=' + Date.now());
         const d = await r.json();
 
-        if (d.action === 'banned') {
-            window.location.replace('/logout');
-            return;
-        }
-
         if (d.action === 'message' && d.message) {
-            const msgEl = document.getElementById('admin-box-msg');
-            const overlay = document.getElementById('admin-overlay');
-            if (msgEl && overlay) {
-                msgEl.textContent = d.message;
-                overlay.classList.add('show');
-            }
+            document.getElementById('admin-box-msg').textContent = d.message;
+            document.getElementById('admin-overlay').classList.add('show');
+            
+            // Mesaj ekranda göründü, şimdi sunucudan sildirelim
+            fetch('/clear_admin_message', {method: 'POST'});
         }
-    } catch (e) {
-        console.log("Status sync error...");
-    }
-    setTimeout(statusLoop, 3000); // 3 saniyede bir kontrol
+        
+        if (d.action === 'banned') window.location.href = '/logout';
+    } catch(e) {}
+    setTimeout(statusLoop, 3000);
 }
 
 setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('tr-TR'); }, 1000);
