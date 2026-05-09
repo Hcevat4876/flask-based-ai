@@ -140,26 +140,7 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# --- STATUS CHECK (called every 5s from client) ---
-@app.route('/status_check')
-def status_check():
-    if 'username' not in session:
-        return jsonify({"action": "logout"})
-    with get_db() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT is_banned, admin_message FROM users WHERE username = %s", (session['username'],))
-            user = cur.fetchone()
-            if not user or user['is_banned']:
-                session.clear()
-                return jsonify({"action": "banned"})
-            msg = user['admin_message'] or ''
-            if msg:
-                cur.execute("UPDATE users SET admin_message = '' WHERE username = %s", (session['username'],))
-                conn.commit()
-                return jsonify({"action": "message", "message": msg})
-    return jsonify({"action": "ok"})
 
-# --- CHAT ---
 @app.route('/get_history')
 def get_history():
     if 'username' not in session:
