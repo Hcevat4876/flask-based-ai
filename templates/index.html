@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -34,7 +34,12 @@
 body {
     background: var(--bg); color: #ccc;
     font-family: 'Fira Code', monospace;
-    height: 100vh; display: flex; overflow: hidden;
+    /* Eski tarayıcılar için fallback */
+    height: 100vh; 
+    /* Modern mobil tarayıcılar için dinamik yükseklik */
+    height: 100dvh; 
+    display: flex; 
+    overflow: hidden;
 }
 
 /* SIDEBAR */
