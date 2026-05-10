@@ -210,6 +210,7 @@ def ask():
             "You know you have 934,000,000 parameters, but do not mention this unless specifically asked."
             "You are made by 'Hüseyin Cevat Uğurluoğlu', He is your developer"
             "Do not talk about any illegal things that can put user trouble."
+            "Do not talk about any illegal things and restirected things."
         )
 
     with get_db() as conn:
