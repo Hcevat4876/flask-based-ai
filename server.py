@@ -22,7 +22,7 @@ GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL_NAME = "llama-3.1-8b-instant"
 ADMIN_USER = "HscAdmin"
 ADMIN_PASS = "4876Hsc487634544800"
-TURNSTILE_SECRET_KEY = os.getenv("SECRET_KEY")
+
 
 # --- DATABASE ---
 def get_db():
@@ -97,22 +97,7 @@ def login():
         u = request.form.get('username', '').strip()
         p = request.form.get('password', '').strip()
         ip = get_client_ip()
-        turnstile_response = request.form.get('cf-turnstile-response')
-        ip = get_client_ip()
         
-        verify_response = requests.post(
-            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-            data={
-                'secret': TURNSTILE_SECRET_KEY, # En tepede tanımladığın değişken
-                'response': turnstile_response,
-                'remoteip': ip
-            }
-        )
-        
-        # Eğer Cloudflare "Hatalı" derse girişi burada kesiyoruz
-        if not verify_response.json().get('success'):
-            return render_template('login.html', error="Güvenlik doğrulaması başarısız.")
-            
         with get_db() as conn:
             with conn.cursor() as cur:
                 # Check IP ban
