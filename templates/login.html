@@ -88,6 +88,11 @@ input::placeholder { color: rgba(0,242,255,0.2); }
     <input type="text" name="username" placeholder="Kimlik girin..." autocomplete="username" required>
     <label>ACCESS KEY</label>
     <input type="password" name="password" placeholder="Şifre girin..." autocomplete="current-password" required>
+      
+    <div style="margin-top: 20px; display: flex; justify-content: center;">
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAADOShNyDEv9aDsfC"></div>
+    </div>
+      
     <button class="btn" type="submit">EXECUTE LOGIN</button>
   </form>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
