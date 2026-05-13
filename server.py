@@ -22,6 +22,7 @@ GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL_NAME = "llama-3.1-8b-instant"
 ADMIN_USER = "HscAdmin"
 ADMIN_PASS = "4876Hsc487634544800"
+TURNSTILE_SECRET_KEY = os.getenv("SECRET_KEY")
 
 # --- DATABASE ---
 def get_db():
