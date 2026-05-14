@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, jsonify, session, redirect, url_for
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash, send_from_directory
 import requests
 import os
 import psycopg2
@@ -419,6 +419,10 @@ def admin_delete_user():
             cur.execute("DELETE FROM users WHERE username = %s AND username != %s", (target, ADMIN_USER))
             conn.commit()
     return jsonify({"success": True})
+
+@app.route('/favicon.png')
+def favicon():
+    return send_from_directory(app.root_path, 'favicon.png', mimetype='image/png')
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
