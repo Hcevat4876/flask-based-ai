@@ -1,5 +1,5 @@
-from flask import Flask, request, render_template, jsonify, session, redirect, url_for
-from werkzeug.security import generate_password_hash, check_password_hash, send_from_directory
+from flask import Flask, request, render_template, jsonify, session, redirect, url_for, send_from_directory
+from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import os
 import psycopg2
