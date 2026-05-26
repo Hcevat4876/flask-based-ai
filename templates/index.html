@@ -254,11 +254,14 @@ code { font-family: 'Fira Code', monospace !important; font-size: 12px !importan
         <div class="prog-bg"><div class="prog-fill prog-pink" id="mem-bar" style="width:71%"></div></div>
     </div>
     <nav class="sidebar-nav">
-        <a href="/static/app-release.apk" class="nav-item download-apk" download><i class="fab fa-android"></i> <span>APK Uygulamasını İndir</span></a>
-        
-        <a href="#" class="nav-item" onclick="const e='info@dabi.com.tr'; const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); if(isIOS){window.location.href='googlegmail:///co?to='+e; setTimeout(()=>{window.location.href='mailto:'+e},2000)}else if(!/Android|Mobi/i.test(navigator.userAgent)){window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+e,'_blank')}else{window.location.href='mailto:'+e} navigator.clipboard.writeText(e); this.querySelector('span').innerText='Kopyalandı!'; setTimeout(()=>this.querySelector('span').innerText=e,2000); return false;"><i class="fas fa-envelope"></i> <span>info@dabi.com.tr</span></a>
+
         <a href="#" class="nav-item" onclick="wipeMemory()"><i class="fas fa-trash"></i> Mesajları Sil</a>
+    
+        <a href="#" class="nav-item" onclick="const e='info@dabi.com.tr'; const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); if(isIOS){window.location.href='googlegmail:///co?to='+e; setTimeout(()=>{window.location.href='mailto:'+e},2000)}else if(!/Android|Mobi/i.test(navigator.userAgent)){window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+e,'_blank')}else{window.location.href='mailto:'+e} navigator.clipboard.writeText(e); this.querySelector('span').innerText='Kopyalandı!'; setTimeout(()=>this.querySelector('span').innerText=e,2000); return false;"><i class="fas fa-envelope"></i> <span>info@dabi.com.tr</span></a>
+        
         <a href="/logout" class="nav-item danger"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</a>
+
+        <a href="/app-release.apk" class="nav-item download-apk" download><i class="fab fa-android"></i> <span>APK Uygulamasını İndir</span></a>
     </nav>
 </aside>
 
