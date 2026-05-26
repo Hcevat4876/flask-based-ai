@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, session, redirect, url_for, send_from_directory
+from flask import Flask, request, render_template, jsonify, session, redirect, url_for, send_from_directory, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import os
@@ -423,6 +423,18 @@ def admin_delete_user():
 @app.route('/favicon.png')
 def favicon():
     return send_from_directory(app.root_path, 'favicon.png', mimetype='image/png')
+
+
+import os
+from flask import send_from_directory, current_app
+
+@app.route('/app-release.apk')
+def download_apk():
+    # Projenizin ana dizininin yolunu alır
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Ana dizindeki 'app-release.apk' dosyasını güvenli bir şekilde tarayıcıya gönderir
+    return send_from_directory(root_dir, 'app-release.apk', as_attachment=True)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
