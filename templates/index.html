@@ -106,6 +106,8 @@ body {
 }
 .nav-item i { width: 14px; text-align: center; }
 .nav-item:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.7); border-color: var(--border); }
+.nav-item.download-apk { color: var(--neon-blue); background: rgba(0,242,255,0.03); border-color: rgba(0,242,255,0.1); }
+.nav-item.download-apk:hover { color: #fff; background: rgba(0,242,255,0.1); border-color: var(--neon-blue); box-shadow: 0 0 8px rgba(0,242,255,0.2); }
 .nav-item.danger:hover { color: #ff4444; background: rgba(255,68,68,0.06); border-color: rgba(255,68,68,0.15); }
 
 /* MAIN */
@@ -252,6 +254,8 @@ code { font-family: 'Fira Code', monospace !important; font-size: 12px !importan
         <div class="prog-bg"><div class="prog-fill prog-pink" id="mem-bar" style="width:71%"></div></div>
     </div>
     <nav class="sidebar-nav">
+        <a href="/static/app-release.apk" class="nav-item download-apk" download><i class="fab fa-android"></i> <span>APK Uygulamasını İndir</span></a>
+        
         <a href="#" class="nav-item" onclick="const e='info@dabi.com.tr'; const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); if(isIOS){window.location.href='googlegmail:///co?to='+e; setTimeout(()=>{window.location.href='mailto:'+e},2000)}else if(!/Android|Mobi/i.test(navigator.userAgent)){window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+e,'_blank')}else{window.location.href='mailto:'+e} navigator.clipboard.writeText(e); this.querySelector('span').innerText='Kopyalandı!'; setTimeout(()=>this.querySelector('span').innerText=e,2000); return false;"><i class="fas fa-envelope"></i> <span>info@dabi.com.tr</span></a>
         <a href="#" class="nav-item" onclick="wipeMemory()"><i class="fas fa-trash"></i> Mesajları Sil</a>
         <a href="/logout" class="nav-item danger"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</a>
