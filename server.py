@@ -430,20 +430,26 @@ from flask import send_from_directory, current_app
 
 @app.route('/app-release.apk')
 def download_apk():
-    # Güvenlik ve auth kontrolü (mevcut kodunuzdaki mantık kalabilir)
     if 'username' not in session:
         return redirect(url_for('login'))
         
     try:
-        # send_file, Android için gerekli tüm başlıkları (MIME, Attachment) otomatik ayarlar
+        # server.py'ın bulunduğu klasörün tam yolunu alır
+        base_dir = os.path.abspath(os.path.dirname(__file__))
+        apk_path = os.path.join(base_dir, 'app-release.apk')
+        
+        # Dosya gerçekten orada var mı kontrol edelim
+        if not os.path.exists(apk_path):
+            return f"Hata: 'app-release.apk' dosyası sunucuda bu konumda bulunamadı: {apk_path}", 404
+
         return send_file(
-            'app-release.apk',
+            apk_path,
             mimetype='application/vnd.android.package-archive',
             as_attachment=True,
             download_name='app-release.apk'
         )
     except Exception as e:
-        return f"Dosya bulunamadı veya sunulamadı: {str(e)}", 404
+        return f"Sunucu Hatası: {str(e)}", 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
