@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, session, redirect, url_for, send_from_directory, current_app
+from flask import Flask, request, render_template, jsonify, session, redirect, url_for, send_from_directory, current_app, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import os
@@ -430,11 +430,20 @@ from flask import send_from_directory, current_app
 
 @app.route('/app-release.apk')
 def download_apk():
-    # Projenizin ana dizininin yolunu alır
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # Ana dizindeki 'app-release.apk' dosyasını güvenli bir şekilde tarayıcıya gönderir
-    return send_from_directory(root_dir, 'app-release.apk', as_attachment=True)
+    # Güvenlik ve auth kontrolü (mevcut kodunuzdaki mantık kalabilir)
+    if 'username' not in session:
+        return redirect(url_for('login'))
+        
+    try:
+        # send_file, Android için gerekli tüm başlıkları (MIME, Attachment) otomatik ayarlar
+        return send_file(
+            'app-release.apk',
+            mimetype='application/vnd.android.package-archive',
+            as_attachment=True,
+            download_name='app-release.apk'
+        )
+    except Exception as e:
+        return f"Dosya bulunamadı veya sunulamadı: {str(e)}", 404
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
