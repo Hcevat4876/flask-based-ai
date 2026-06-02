@@ -371,55 +371,9 @@ function escapeHTML(str) {
 }
 
 function renderContent(text) {
-    // 1. Ham metindeki gizli style/script enjeksiyonlarını yakalayıp Markdown kod bloğuna çeviriyoruz
-    let safeText = text
-        .replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, '```css\n$1\n```')
-        .replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, '```javascript\n$1\n```');
-
-    // Eğer metin düz bir HTML dökümanı gibi başlıyorsa ama kod blokları içine alınmadıysa onu tamamen sarmalayalım
-    if (safeText.trim().toLowerCase().startsWith('<!doctype html>') || safeText.trim().toLowerCase().startsWith('<html>')) {
-        if (!safeText.includes('```')) {
-            safeText = '```html\n' + safeText + '\n```';
-        }
-    }
-
-    marked.setOptions({
-        highlight: function(code, lang) { return hljs.highlightAuto(code).value; },
-        breaks: true
-    });
-
-    let rawHtml = marked.parse(safeText);
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = rawHtml;
-
-    tempDiv.querySelectorAll('pre').forEach(pre => {
-        const codeEl = pre.querySelector('code');
-        const lang = codeEl ? (codeEl.className.replace('language-', '') || 'code') : 'code';
-        const rawCode = codeEl ? codeEl.textContent : pre.textContent;
-
-        const container = document.createElement('div');
-        container.className = 'code-container';
-        container.innerHTML = `
-            <div class="code-header">
-                <span>${lang.toUpperCase()}</span>
-                <div class="code-actions">
-                    <span class="code-btn" onclick="copyCode(this)"><i class="fas fa-copy"></i> Copy</span>
-                    ${(lang === 'html' || lang === 'xml' || lang === 'css') ? `<span class="code-btn" onclick="togglePreview(this)"><i class="fas fa-eye"></i> Preview</span>` : ''}
-                </div>
-            </div>
-            <pre>${pre.innerHTML}</pre>
-            <iframe class="preview-box" sandbox="allow-scripts"></iframe>`;
-
-        const hiddenData = document.createElement('script');
-        hiddenData.type = 'text/plain';
-        hiddenData.className = 'raw-code-holder';
-        hiddenData.textContent = rawCode;
-        container.appendChild(hiddenData);
-
-        pre.replaceWith(container);
-    });
-
-    return tempDiv.innerHTML;
+    // Bu fonksiyon artık sadece gelen metni olduğu gibi geri döndürüyor.
+    // Herhangi bir HTML dönüşümü veya kod kutusu yapmıyor.
+    return text;
 }
 
 function togglePreview(btn) {
@@ -446,13 +400,9 @@ async function appendMsg(sender, text, typeEffect = true) {
     chatMsgs.appendChild(wrap);
     const msgEl = wrap.querySelector('.msg');
 
-    if (sender === 'user') {
-        // ÇOK KRİTİK DEĞİŞİKLİK: Kullanıcı mesajları da artık renderContent süzgecinden geçiyor,
-        // böylece kullanıcı direkt HTML/CSS yazdığında sayfa patlamıyor, güzel bir kod kutusuna dönüşüyor!
-        msgEl.innerHTML = renderContent(text);
-        scrollBottom();
-    } else if (!typeEffect) {
-        msgEl.innerHTML = renderContent(text);
+    if (sender === 'user' || !typeEffect) {
+        // .innerHTML yerine .textContent kullanarak gelen her şeyin düz metin olmasını sağlıyoruz
+        msgEl.textContent = text;
         scrollBottom();
     } else {
         msgEl.classList.add('typing');
@@ -461,12 +411,13 @@ async function appendMsg(sender, text, typeEffect = true) {
         return new Promise(resolve => {
             function type() {
                 if (i < text.length) {
-                    msgEl.innerHTML = renderContent(text.substring(0, i + 1));
+                    // Yazma efekti sırasında da sadece düz metin (textContent) olarak basıyoruz
+                    msgEl.textContent = text.substring(0, i + 1);
                     i += 2; 
                     scrollBottom();
                     setTimeout(type, speed);
                 } else {
-                    msgEl.innerHTML = renderContent(text);
+                    msgEl.textContent = text;
                     msgEl.classList.remove('typing');
                     scrollBottom();
                     resolve();
