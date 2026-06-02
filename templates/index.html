@@ -34,9 +34,7 @@
 body {
     background: var(--bg); color: #ccc;
     font-family: 'Fira Code', monospace;
-    /* Eski tarayıcılar için fallback */
     height: 100vh; 
-    /* Modern mobil tarayıcılar için dinamik yükseklik */
     height: 100dvh; 
     display: flex; 
     overflow: hidden;
@@ -193,7 +191,6 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; positio
     .topbar-clock { display: none; }
     .msg-wrap { max-width: 95%; }
     
-    /* Overlay for when sidebar is open */
     .sidebar-overlay {
         display: none; position: fixed; inset: 0;
         background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
@@ -202,7 +199,6 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; positio
     .sidebar-overlay.active { display: block; }
 }
 
-/* Remaining original styles kept same */
 .typing::after { content: '_'; display: inline-block; color: var(--neon-blue); animation: blink 0.7s infinite; margin-left: 3px; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 .code-container { position: relative; margin: 15px 0; background: #1a1b26; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
@@ -234,7 +230,7 @@ code { font-family: 'Fira Code', monospace !important; font-size: 12px !importan
 <aside class="sidebar" id="sidebar">
     <div class="logo-mark">
         <div class="logo-icon"><i class="fas fa-brain"></i></div>
-        <div><div class="logo-text">DABI</div><div class="logo-sub">Yapay Zeka</div></div>
+        <div><div class="logo-text">DABI</div><div class="logo-sub">Yarap Zeka</div></div>
     </div>
     <div class="user-card">
         <div class="user-avatar"><i class="fas fa-user"></i></div>
@@ -254,13 +250,9 @@ code { font-family: 'Fira Code', monospace !important; font-size: 12px !importan
         <div class="prog-bg"><div class="prog-fill prog-pink" id="mem-bar" style="width:71%"></div></div>
     </div>
     <nav class="sidebar-nav">
-
         <a href="#" class="nav-item" onclick="wipeMemory()"><i class="fas fa-trash"></i> Mesajları Sil</a>
-    
         <a href="#" class="nav-item" onclick="const e='info@dabi.com.tr'; const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); if(isIOS){window.location.href='googlegmail:///co?to='+e; setTimeout(()=>{window.location.href='mailto:'+e},2000)}else if(!/Android|Mobi/i.test(navigator.userAgent)){window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+e,'_blank')}else{window.location.href='mailto:'+e} navigator.clipboard.writeText(e); this.querySelector('span').innerText='Kopyalandı!'; setTimeout(()=>this.querySelector('span').innerText=e,2000); return false;"><i class="fas fa-envelope"></i> <span>info@dabi.com.tr</span></a>
-        
         <a href="/logout" class="nav-item danger"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</a>
-
         <a href="/indir-dabi.apk" class="nav-item download-apk" download><i class="fab fa-android"></i> <span>APK Uygulamasını İndir</span></a>
     </nav>
 </aside>
@@ -293,14 +285,11 @@ code { font-family: 'Fira Code', monospace !important; font-size: 12px !importan
 </main>
 
 <script>
-// Sayfa her gösterildiğinde (geri tuşu dahil) çalışır
 window.onpageshow = function(event) {
-    // Eğer sayfa tarayıcı önbelleğinden (geri tuşuyla) yüklendiyse
     if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
-        window.location.reload(); // Sayfayı zorla yenile, sunucuya gitmesini sağla
+        window.location.reload();
     }
 };
-
 
 async function checkAuth() {
     try {
@@ -314,7 +303,6 @@ async function checkAuth() {
     }
 }
 checkAuth();
-    
 
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('active');
@@ -349,15 +337,11 @@ async function statusLoop() {
     try {
         const r = await fetch('/status_check?t=' + Date.now());
         const d = await r.json();
-
         if (d.action === 'message' && d.message) {
             document.getElementById('admin-box-msg').textContent = d.message;
             document.getElementById('admin-overlay').classList.add('show');
-            
-            // Mesaj ekranda göründü, şimdi sunucudan sildirelim
             fetch('/clear_admin_message', {method: 'POST'});
         }
-        
         if (d.action === 'banned') window.location.href = '/logout';
     } catch(e) {}
     setTimeout(statusLoop, 3000);
@@ -379,36 +363,42 @@ function showChat() {
     hasMessages = true;
 }
 
-function renderContent(text) {
-    // 1. Gelen metindeki zararlı HTML ve STYLE yapılarını düz metne (escape) dönüştürerek etkisizleştiriyoruz
-    // Böylece <style> yazılsa bile tarayıcı bunu çalıştırmaz, sadece metin olarak görür.
-    const escapedText = text
-        .replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, '```css\n$1\n```') // Style etiketini kod bloğuna çevirir
-        .replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, '```javascript\n$1\n```'); // Script etiketini kod bloğuna çevirir
+// Güvenli HTML Temizleyici Fonksiyon (DOM yapısını bozabilecek etiketleri zararsız stringe çevirir)
+function escapeHTML(str) {
+    return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+}
 
-    // 2. Markdown ayarları
+function renderContent(text) {
+    // 1. Ham metindeki gizli style/script enjeksiyonlarını yakalayıp Markdown kod bloğuna çeviriyoruz
+    let safeText = text
+        .replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, '```css\n$1\n```')
+        .replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, '```javascript\n$1\n```');
+
+    // Eğer metin düz bir HTML dökümanı gibi başlıyorsa ama kod blokları içine alınmadıysa onu tamamen sarmalayalım
+    if (safeText.trim().toLowerCase().startsWith('<!doctype html>') || safeText.trim().toLowerCase().startsWith('<html>')) {
+        if (!safeText.includes('```')) {
+            safeText = '```html\n' + safeText + '\n```';
+        }
+    }
+
     marked.setOptions({
         highlight: function(code, lang) { return hljs.highlightAuto(code).value; },
         breaks: true
     });
 
-    // 3. Güvenli hale getirilmiş metni Markdown olarak parse et
-    let rawHtml = marked.parse(escapedText);
-    
+    let rawHtml = marked.parse(safeText);
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = rawHtml;
 
-    // 4. Kod bloklarını (pre) bul ve güvenli container'lara yerleştir
     tempDiv.querySelectorAll('pre').forEach(pre => {
         const codeEl = pre.querySelector('code');
         const lang = codeEl ? (codeEl.className.replace('language-', '') || 'code') : 'code';
-        
-        // Orijinal ham kodu (escaped olmamış temiz hali) alıyoruz
         const rawCode = codeEl ? codeEl.textContent : pre.textContent;
 
         const container = document.createElement('div');
         container.className = 'code-container';
-        
         container.innerHTML = `
             <div class="code-header">
                 <span>${lang.toUpperCase()}</span>
@@ -420,7 +410,6 @@ function renderContent(text) {
             <pre>${pre.innerHTML}</pre>
             <iframe class="preview-box" sandbox="allow-scripts"></iframe>`;
 
-        // Ham kodu Preview için burada güvenle saklıyoruz
         const hiddenData = document.createElement('script');
         hiddenData.type = 'text/plain';
         hiddenData.className = 'raw-code-holder';
@@ -433,7 +422,20 @@ function renderContent(text) {
     return tempDiv.innerHTML;
 }
 
-
+function togglePreview(btn) {
+    const container = btn.closest('.code-container');
+    const iframe = container.querySelector('.preview-box');
+    const rawCode = container.querySelector('.raw-code-holder').textContent;
+    
+    if (iframe.style.display === 'block') {
+        iframe.style.display = 'none';
+        btn.innerHTML = '<i class="fas fa-eye"></i> Preview';
+    } else {
+        iframe.style.display = 'block';
+        iframe.srcdoc = rawCode; // Kod tamamen izole iframe içinde çalışır, dışarı sızamaz.
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i> Close';
+    }
+}
 
 async function appendMsg(sender, text, typeEffect = true) {
     if (!hasMessages) showChat();
@@ -444,8 +446,13 @@ async function appendMsg(sender, text, typeEffect = true) {
     chatMsgs.appendChild(wrap);
     const msgEl = wrap.querySelector('.msg');
 
-    if (sender === 'user' || !typeEffect) {
-        msgEl.innerHTML = sender === 'user' ? text : renderContent(text);
+    if (sender === 'user') {
+        // ÇOK KRİTİK DEĞİŞİKLİK: Kullanıcı mesajları da artık renderContent süzgecinden geçiyor,
+        // böylece kullanıcı direkt HTML/CSS yazdığında sayfa patlamıyor, güzel bir kod kutusuna dönüşüyor!
+        msgEl.innerHTML = renderContent(text);
+        scrollBottom();
+    } else if (!typeEffect) {
+        msgEl.innerHTML = renderContent(text);
         scrollBottom();
     } else {
         msgEl.classList.add('typing');
@@ -507,19 +514,12 @@ function copyCode(btn) {
     setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 2000);
 }
 
-
-
 function scrollBottom() { const c = document.getElementById('chat-container'); c.scrollTop = c.scrollHeight; }
 
-// Kullanıcı sol menüden "Mesajları Sil" butonuna bastığı an doğrudan burası tetiklenir
 async function wipeMemory() {
     try {
-        // 1. Hiçbir şey sormadan, onay kutusu göstermeden direkt sunucuya silme emrini gönderiyoruz
         await fetch('/reset', { method: 'POST' });
-        
-        // 2. Android'in çık-gir yapmadan anında ekranı temizlemesi için cache kıran linkle sayfayı yeniliyoruz
         window.location.href = window.location.origin + window.location.pathname + '?cache_bust=' + Date.now();
-        
     } catch(e) {
         console.error("Silme hatası:", e);
     }
