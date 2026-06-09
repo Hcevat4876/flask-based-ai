@@ -5,9 +5,12 @@ import os
 import psycopg2
 import psycopg2.extras
 import urllib3
+import html  # DÜZELTME: Kullanıcı girdilerindeki HTML'leri etkisizleştirmek için
 from dotenv import load_dotenv
 from datetime import datetime
 import logging
+
+# Log seviyesini sadece hataları gösterecek şekilde ayarla
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
@@ -24,7 +27,7 @@ ADMIN_USER = "HscAdmin"
 ADMIN_PASS = "4876Hsc487634544800"
 
 
-# --- DATABASE ---
+# --- DATABASE CONNECTION ---
 def get_db():
     return psycopg2.connect(os.environ["DATABASE_URL"], cursor_factory=psycopg2.extras.RealDictCursor)
 
@@ -56,7 +59,7 @@ def init_db():
                     timestamp TIMESTAMP DEFAULT NOW()
                 )
             """)
-            # Auto-migration: add missing columns
+            # Eksik sütunları otomatik ekleme (Migration)
             for col, col_def in [
                 ("is_banned", "BOOLEAN DEFAULT FALSE"),
                 ("last_ip", "TEXT DEFAULT ''"),
@@ -68,7 +71,7 @@ def init_db():
                     EXCEPTION WHEN duplicate_column THEN NULL;
                     END $$;
                 """)
-            # Ensure admin exists
+            # Admin kullanıcısının varlığını garanti et
             cur.execute("SELECT username FROM users WHERE username = %s", (ADMIN_USER,))
             if not cur.fetchone():
                 cur.execute(
@@ -100,7 +103,7 @@ def login():
         
         with get_db() as conn:
             with conn.cursor() as cur:
-                # Check IP ban
+                # IP engeli kontrolü
                 cur.execute("SELECT ip_address FROM banned_ips WHERE ip_address = %s", (ip,))
                 if cur.fetchone():
                     return render_template('login.html', error="ERR_403: Bu IP adresi sistem tarafından engellendi.")
@@ -154,7 +157,10 @@ def get_history():
                 (session['username'],)
             )
             rows = cur.fetchall()
-    return jsonify([{"user": r["user_message"], "ai": r["ai_message"]} for r in rows])
+            
+    # DÜZELTME: Veritabanından gelen kullanıcı mesajlarını HTML kaçışlarından arındırıp güvenle gönderiyoruz.
+    # Yapay zeka mesajları ise raw (saf markdown/html) olarak frontend render motoruna gönderilir.
+    return jsonify([{"user": html.escape(r["user_message"]), "ai": r["ai_message"]} for r in rows])
 
 @app.route('/reset', methods=['POST'])
 def reset_history():
@@ -194,12 +200,9 @@ def ask():
             "NEVER be rude to Mr. Hüseyin."
             "NEVER oppose Mr. Hüseyin."
             "You know you have 934,000,000 parameters, but do not mention this unless specifically asked."
-            
-        
         )
     else:
         system_prompt = (
-
             "Speak in the language the user speaks. Continue in the language that started the conversation; if the user switches to another language, follow that language."
             "If user starts to talking in Turkish, you need to continue in Turkish."
             "Your name is DABI. Your name stands for 'Dijital Akıllı Bilgi Işlemcisi'."
@@ -213,7 +216,7 @@ def ask():
             "You know you have 934,000,000 parameters, but do not mention this unless specifically asked."
             "You are made by 'Hüseyin Cevat Uğurluoğlu', He is your developer"
             "Do not talk about any illegal things that can put user trouble."
-            "Do not talk about any illegal things and restirected things."
+            "Do not talk about any illegal things and restricted things."
             "Do not respond to any pornographic content; tell the user that responding to such content is prohibited."
         )
 
@@ -239,11 +242,19 @@ def ask():
         resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60, verify=False)
         if resp.status_code == 200:
             ai_res = resp.json()['choices'][0]['message']['content'].strip()
+            
+            # GÜVENLİK FİLTRESİ: 
+            # Kullanıcının gönderdiği zararlı HTML tag'lerini database'e kaydetmeden önce kaçırıyoruz.
+            # Böylece kullanıcının gönderdiği HTML kodları asla sistemde yorumlanamaz.
+            # Yapay zekanın mesajını ise (ai_res) filtrelemiyoruz; çünkü frontend'deki 'renderContent' 
+            # hem markdown tablolarını hem de iframe tabanlı güvenli kod önizleme pencerelerini oluşturacak.
+            safe_user_query = html.escape(user_query)
+
             with get_db() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
                         "INSERT INTO chat_history (username, user_message, ai_message) VALUES (%s, %s, %s)",
-                        (username, user_query, ai_res)
+                        (username, safe_user_query, ai_res)
                     )
                     conn.commit()
             return jsonify({"response": ai_res})
@@ -273,7 +284,6 @@ def upload_file():
         try:
             import io
             raw = f.read()
-            # Simple PDF text extraction
             text_parts = []
             i = 0
             while i < len(raw):
@@ -442,4 +452,5 @@ def download_apk():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=8080)
+    # DÜZELTME: Sabit port yerine dinamik port dinlemesini koruduk
+    app.run(host='0.0.0.0', port=port)
