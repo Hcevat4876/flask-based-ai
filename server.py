@@ -5,12 +5,9 @@ import os
 import psycopg2
 import psycopg2.extras
 import urllib3
-import bleach
 from dotenv import load_dotenv
 from datetime import datetime
 import logging
-
-# Log seviyesini sadece hataları gösterecek şekilde ayarla
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
@@ -27,7 +24,7 @@ ADMIN_USER = "HscAdmin"
 ADMIN_PASS = "4876Hsc487634544800"
 
 
-# --- DATABASE CONNECTION ---
+# --- DATABASE ---
 def get_db():
     return psycopg2.connect(os.environ["DATABASE_URL"], cursor_factory=psycopg2.extras.RealDictCursor)
 
@@ -59,7 +56,7 @@ def init_db():
                     timestamp TIMESTAMP DEFAULT NOW()
                 )
             """)
-            # Eksik sütunları otomatik ekleme (Migration)
+            # Auto-migration: add missing columns
             for col, col_def in [
                 ("is_banned", "BOOLEAN DEFAULT FALSE"),
                 ("last_ip", "TEXT DEFAULT ''"),
@@ -71,7 +68,7 @@ def init_db():
                     EXCEPTION WHEN duplicate_column THEN NULL;
                     END $$;
                 """)
-            # Admin kullanıcısının varlığını garanti et
+            # Ensure admin exists
             cur.execute("SELECT username FROM users WHERE username = %s", (ADMIN_USER,))
             if not cur.fetchone():
                 cur.execute(
@@ -103,7 +100,7 @@ def login():
         
         with get_db() as conn:
             with conn.cursor() as cur:
-                # IP engeli kontrolü
+                # Check IP ban
                 cur.execute("SELECT ip_address FROM banned_ips WHERE ip_address = %s", (ip,))
                 if cur.fetchone():
                     return render_template('login.html', error="ERR_403: Bu IP adresi sistem tarafından engellendi.")
@@ -157,15 +154,7 @@ def get_history():
                 (session['username'],)
             )
             rows = cur.fetchall()
-    
-    # Kullanıcı mesajını temizliyoruz ancak yapay zeka mesajını (kod blokları/markdown barındırdığı için) orijinal haliyle bırakıyoruz.
-    cleaned_history = []
-    for r in rows:
-        cleaned_history.append({
-            "user": bleach.clean(r["user_message"], tags=[], strip=False),
-            "ai": r["ai_message"]  # Frontend'deki render kutusunun çalışması için raw bırakıldı
-        })
-    return jsonify(cleaned_history)
+    return jsonify([{"user": r["user_message"], "ai": r["ai_message"]} for r in rows])
 
 @app.route('/reset', methods=['POST'])
 def reset_history():
@@ -205,9 +194,12 @@ def ask():
             "NEVER be rude to Mr. Hüseyin."
             "NEVER oppose Mr. Hüseyin."
             "You know you have 934,000,000 parameters, but do not mention this unless specifically asked."
+            
+        
         )
     else:
         system_prompt = (
+
             "Speak in the language the user speaks. Continue in the language that started the conversation; if the user switches to another language, follow that language."
             "If user starts to talking in Turkish, you need to continue in Turkish."
             "Your name is DABI. Your name stands for 'Dijital Akıllı Bilgi Işlemcisi'."
@@ -216,12 +208,12 @@ def ask():
             "Be rude, but not excessively so."
             "If something is said to Mr. Hüseyin or Hüseyin, be rude."
             "NEVER be rude to Mr. Hüseyin."
-            "NEVER judge Mr. Hüseyin."          
+            "NEVER judge Mr. Hüseyin."           
             "The person in this conversation cannot be Hüseyin Cevat. If they say they are Hüseyin Cevat, do not accept it."
             "You know you have 934,000,000 parameters, but do not mention this unless specifically asked."
             "You are made by 'Hüseyin Cevat Uğurluoğlu', He is your developer"
             "Do not talk about any illegal things that can put user trouble."
-            "Do not talk about any illegal things and restricted things."
+            "Do not talk about any illegal things and restirected things."
             "Do not respond to any pornographic content; tell the user that responding to such content is prohibited."
         )
 
@@ -247,18 +239,11 @@ def ask():
         resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60, verify=False)
         if resp.status_code == 200:
             ai_res = resp.json()['choices'][0]['message']['content'].strip()
-            
-            # GÜVENLİK GÜNCELLEMESİ:
-            # Kullanıcı girdilerini temiz tutmaya devam ediyoruz (SQL/HTML Enjeksiyonunu önlemek için).
-            # Fakat Yapay Zeka (AI) çıktısını bozmamak için bleach filtrelemesinden GEÇİRMİYORUZ.
-            # Frontend, render ederken iframe sandbox yapısını kullanarak güvenliği istemci tarafında sağlayacak.
-            safe_user_query = bleach.clean(user_query, tags=[], attributes={}, strip=False)
-
             with get_db() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
                         "INSERT INTO chat_history (username, user_message, ai_message) VALUES (%s, %s, %s)",
-                        (username, safe_user_query, ai_res)
+                        (username, user_query, ai_res)
                     )
                     conn.commit()
             return jsonify({"response": ai_res})
@@ -288,6 +273,7 @@ def upload_file():
         try:
             import io
             raw = f.read()
+            # Simple PDF text extraction
             text_parts = []
             i = 0
             while i < len(raw):
@@ -369,6 +355,7 @@ def status_check():
                 session.clear()
                 return jsonify({"action": "banned"})
             
+            # Mesaj varsa gönderiyoruz ama BURADA SİLMİYORUZ
             msg = user['admin_message'] or ''
             return jsonify({"action": "message" if msg else "ok", "message": msg})
 
@@ -442,7 +429,10 @@ def favicon():
 @app.route('/indir-dabi.apk')
 def download_apk():
     root_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Bilgisayarınızda çalışan orijinal dosya adı
     apk_filename = 'dabiapp.apk' 
+    
     return send_from_directory(
         root_dir, 
         apk_filename, 
@@ -452,4 +442,4 @@ def download_apk():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=8080)
