@@ -451,7 +451,7 @@ async function appendMsg(sender, text, typeEffect = true) {
         msgEl.textContent = text;
         scrollBottom();
     } else if (!typeEffect) {
-        // Eski sohbet geçmişi yüklenirken
+        // Eski sohbet geçmişi yüklenirken direkt render edilir
         msgEl.innerHTML = renderContent(text);
         msgEl.querySelectorAll('pre code').forEach((el) => { 
             if(typeof hljs !== 'undefined') hljs.highlightElement(el); 
@@ -466,13 +466,20 @@ async function appendMsg(sender, text, typeEffect = true) {
         return new Promise(resolve => {
             function type() {
                 if (i < text.length) {
-                    // Yazma anında ham metin olarak ekrana basılır
-                    msgEl.textContent = text.substring(0, i + 1);
+                    // Yazma anında metni anlık olarak renderContent motorundan geçiriyoruz
+                    const partialText = text.substring(0, i + 1);
+                    msgEl.innerHTML = renderContent(partialText);
+                    
+                    // Yazma esnasında oluşan/büyüyen kod bloklarını anlık olarak renklendir
+                    msgEl.querySelectorAll('pre code').forEach((el) => { 
+                        if(typeof hljs !== 'undefined') hljs.highlightElement(el); 
+                    });
+
                     i += 2; 
                     scrollBottom();
                     setTimeout(type, speed);
                 } else {
-                    // Yazma bittiğinde güvenli render motoruna sokulur (Kod blokları önizlenebilir olur)
+                    // Yazma tamamen bittiğinde son kez temiz ve eksiksiz render yapılıyor
                     msgEl.innerHTML = renderContent(text);
                     msgEl.querySelectorAll('pre code').forEach((el) => { 
                         if(typeof hljs !== 'undefined') hljs.highlightElement(el); 
@@ -486,7 +493,6 @@ async function appendMsg(sender, text, typeEffect = true) {
         });
     }
 }
-
 async function sendMessage() {
     const text = inputEl.value.trim();
     if (!text && !pendingFileContent) return;
