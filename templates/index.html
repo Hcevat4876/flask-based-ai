@@ -9,16 +9,17 @@
 
     <title>DABI-AI</title>
 
-    <link rel="icon" type="image/png" href="[https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1](https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1)">
-    <link rel="apple-touch-icon" href="[https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1](https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1)">
-    <link rel="apple-touch-icon" sizes="180x180" href="[https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1](https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1)">
+    <link rel="icon" type="image/png" href="https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1">
 
-    <link href="[https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Fira+Code:wght@300;400;500&display=swap](https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Fira+Code:wght@300;400;500&display=swap)" rel="stylesheet">
-    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <script src="[https://cdn.jsdelivr.net/npm/marked/marked.min.js](https://cdn.jsdelivr.net/npm/marked/marked.min.js)"></script>
-    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/tokyo-night-dark.min.css](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/tokyo-night-dark.min.css)">
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js](https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js)"></script>
+    <!-- Markdown Parser ve Kod Renklendirici -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/tokyo-night-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -248,7 +249,7 @@ code { font-family: 'Fira Code', monospace !important; font-size: 12px !importan
     </div>
     <nav class="sidebar-nav">
         <a href="#" class="nav-item" onclick="wipeMemory()"><i class="fas fa-trash"></i> Mesajları Sil</a>
-        <a href="#" class="nav-item" onclick="const e='info@dabi.com.tr'; const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); if(isIOS){window.location.href='googlegmail:///co?to='+e; setTimeout(()=>{window.location.href='mailto:'+e},2000)}else if(!/Android|Mobi/i.test(navigator.userAgent)){window.open('[https://mail.google.com/mail/?view=cm&fs=1&to='+e,'_blank](https://mail.google.com/mail/?view=cm&fs=1&to='+e,'_blank)')}else{window.location.href='mailto:'+e} navigator.clipboard.writeText(e); this.querySelector('span').innerText='Kopyalandı!'; setTimeout(()=>this.querySelector('span').innerText=e,2000); return false;"><i class="fas fa-envelope"></i> <span>info@dabi.com.tr</span></a>
+        <a href="#" class="nav-item" onclick="const e='info@dabi.com.tr'; const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); if(isIOS){window.location.href='googlegmail:///co?to='+e; setTimeout(()=>{window.location.href='mailto:'+e},2000)}else if(!/Android|Mobi/i.test(navigator.userAgent)){window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+e,'_blank')}else{window.location.href='mailto:'+e} navigator.clipboard.writeText(e); this.querySelector('span').innerText='Kopyalandı!'; setTimeout(()=>this.querySelector('span').innerText=e,2000); return false;"><i class="fas fa-envelope"></i> <span>info@dabi.com.tr</span></a>
         <a href="/logout" class="nav-item danger"><i class="fas fa-sign-out-alt"></i> Çıkış Yap</a>
         <a href="/indir-dabi.apk" class="nav-item download-apk" download><i class="fab fa-android"></i> <span>APK Uygulamasını İndir</span></a>
     </nav>
@@ -301,7 +302,6 @@ async function checkAuth() {
 }
 checkAuth();
 
-// Menü Aç/Kapat
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('active');
     document.getElementById('sidebarOverlay').classList.toggle('active');
@@ -361,27 +361,32 @@ function showChat() {
     hasMessages = true;
 }
 
-// Güvenli HTML Kaçırma Fonksiyonu
+// Güvenli HTML Kaçırma Fonksiyonu (HTML etiketlerini tamamen düz yazıya dönüştürür)
 function escapeHTML(str) {
     return str.replace(/[&<>'"]/g, 
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
     );
 }
 
-// Mesaj İçeriğini Güvenli ve Anlık Render Eden Motor
+// Yapay Zeka Mesajlarını Güvenli Bir Şekilde Düzenleyen Fonksiyon
 function renderContent(text) {
     const codeBlocks = [];
+    
+    // Markdown formatındaki kod bloklarını esnek ve güvenli bir şekilde yakalayan regex
     const codeBlockRegex = /```(html|css|js|javascript|python|bash|sh|json|sql|cpp|c|xml)?\s*([\s\S]*?)```/g;
     
+    // Kod bloklarını marked.js dönüştürmeden önce güvenli geçici kelimelerle yedekliyoruz
     let processedText = text.replace(codeBlockRegex, (match, lang, code) => {
         const placeholder = `DABICODEBLOCKPLACEHOLDER${codeBlocks.length}`;
         codeBlocks.push({ lang: lang || 'code', code: code });
         return placeholder;
     });
     
+    // Kod dışındaki alanları temizleyip markdown derleyicisinden geçiriyoruz
     processedText = escapeHTML(processedText);
     let htmlOutput = typeof marked !== 'undefined' ? marked.parse(processedText) : processedText;
     
+    // Yedeklenen kod bloklarını şık arayüz kutularıyla geri yerleştiriyoruz
     codeBlocks.forEach((block, idx) => {
         const placeholder = `DABICODEBLOCKPLACEHOLDER${idx}`;
         const langLower = block.lang.toLowerCase();
@@ -413,6 +418,7 @@ function togglePreview(btn) {
     const container = btn.closest('.code-container');
     const iframe = container.querySelector('.preview-box');
     
+    // Gizli alandaki güvenli şekilde kodlanmış veriyi geri çözüyoruz (iframe içinde ham HTML çalışabilmesi için)
     let rawCodeEscaped = container.querySelector('.raw-code-holder').innerHTML;
     let rawCode = rawCodeEscaped
         .replace(/&lt;/g, '<')
@@ -426,12 +432,11 @@ function togglePreview(btn) {
         btn.innerHTML = '<i class="fas fa-eye"></i> Önizleme';
     } else {
         iframe.style.display = 'block';
-        iframe.srcdoc = rawCode;
+        iframe.srcdoc = rawCode; // Kod tamamen güvenli ve izole iframe içinde çalışır.
         btn.innerHTML = '<i class="fas fa-eye-slash"></i> Kapat';
     }
 }
 
-// Canlı Mesaj Ekleme Fonksiyonu
 async function appendMsg(sender, text, typeEffect = true) {
     if (!hasMessages) showChat();
     const wrap = document.createElement('div');
@@ -442,9 +447,11 @@ async function appendMsg(sender, text, typeEffect = true) {
     const msgEl = wrap.querySelector('.msg');
 
     if (sender === 'user') {
+        // KULLANICI GİRDİLERİ KESİNLİKLE textContent OLARAK BASILIR (HTML asla çalışmaz!)
         msgEl.textContent = text;
         scrollBottom();
     } else if (!typeEffect) {
+        // Eski sohbet geçmişi yüklenirken
         msgEl.innerHTML = renderContent(text);
         msgEl.querySelectorAll('pre code').forEach((el) => { 
             if(typeof hljs !== 'undefined') hljs.highlightElement(el); 
@@ -459,20 +466,13 @@ async function appendMsg(sender, text, typeEffect = true) {
         return new Promise(resolve => {
             function type() {
                 if (i < text.length) {
-                    // DEĞİŞİKLİK: Yazma anında da metni renderContent'ten geçirerek HTML olarak basıyoruz
-                    const partialText = text.substring(0, i + 1);
-                    msgEl.innerHTML = renderContent(partialText);
-                    
-                    // Yazma esnasında oluşan kod bloklarını anlık olarak renklendir
-                    msgEl.querySelectorAll('pre code').forEach((el) => { 
-                        if(typeof hljs !== 'undefined') hljs.highlightElement(el); 
-                    });
-
+                    // Yazma anında ham metin olarak ekrana basılır
+                    msgEl.textContent = text.substring(0, i + 1);
                     i += 2; 
                     scrollBottom();
                     setTimeout(type, speed);
                 } else {
-                    // Yazma tamamen bittiğinde son kez temiz render yapılıyor
+                    // Yazma bittiğinde güvenli render motoruna sokulur (Kod blokları önizlenebilir olur)
                     msgEl.innerHTML = renderContent(text);
                     msgEl.querySelectorAll('pre code').forEach((el) => { 
                         if(typeof hljs !== 'undefined') hljs.highlightElement(el); 
@@ -485,6 +485,8 @@ async function appendMsg(sender, text, typeEffect = true) {
             type();
         });
     }
+}
+
 async function sendMessage() {
     const text = inputEl.value.trim();
     if (!text && !pendingFileContent) return;
@@ -517,6 +519,7 @@ async function sendMessage() {
 
 function copyCode(btn) {
     const code = btn.closest('.code-container').querySelector('code').innerText;
+    // iframe sınırlandırmalarına karşı kopyalama alternatifi
     const tempTextarea = document.createElement('textarea');
     tempTextarea.value = code;
     document.body.appendChild(tempTextarea);
