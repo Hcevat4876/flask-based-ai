@@ -20,6 +20,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "dabi_core_secret_9921")
 
+# --- DOSYA BOYUTU SINIRINI GÜNCELLE ---
+# Flask varsayılan limitini 50 MB (50 * 1024 * 1024 bayt) olarak ayarlıyoruz
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL_NAME = "llama-3.3-70b-versatile"
@@ -273,36 +277,64 @@ def upload_file():
     f = request.files.get('file')
     if not f:
         return jsonify({"success": False, "error": "Dosya bulunamadı."})
-    allowed = {'pdf', 'txt', 'py'}
+        
+    # Genişletilmiş izin verilen formatlar listesi
+    allowed = {'pdf', 'txt', 'py', 'docx', 'xlsx', 'xls', 'csv'}
     ext = f.filename.rsplit('.', 1)[-1].lower() if '.' in f.filename else ''
     if ext not in allowed:
-        return jsonify({"success": False, "error": "Sadece PDF, TXT ve PY dosyaları kabul edilir."})
+        return jsonify({"success": False, "error": f"Desteklenmeyen format (.{ext}). Sadece PDF, DOCX, XLSX, CSV, TXT ve PY dosyaları kabul edilir."})
+        
     content = ""
-    if ext in ('txt', 'py'):
-        content = f.read().decode('utf-8', errors='replace')
-    elif ext == 'pdf':
-        try:
+    try:
+        # 1. Metin ve Kod Dosyaları
+        if ext in ('txt', 'py'):
+            content = f.read().decode('utf-8', errors='replace')
+            
+        # 2. PDF Dosyaları (pypdf Entegrasyonu)
+        elif ext == 'pdf':
             import io
-            raw = f.read()
+            from pypdf import PdfReader
+            pdf_file = io.BytesIO(f.read())
+            reader = PdfReader(pdf_file)
+            text_parts = [page.extract_text() for page in reader.pages if page.extract_text()]
+            content = '\n'.join(text_parts) if text_parts else "[PDF içeriğinde okunabilir metin katmanı bulunamadı]"
+            
+        # 3. Microsoft Word Belgeleri (DOCX)
+        elif ext == 'docx':
+            import io
+            from docx import Document
+            docx_file = io.BytesIO(f.read())
+            doc = Document(docx_file)
+            text_parts = [p.text for p in doc.paragraphs]
+            content = '\n'.join(text_parts)
+            
+        # 4. Microsoft Excel Dosyaları (XLSX, XLS)
+        elif ext in ('xlsx', 'xls'):
+            import io
+            import pandas as pd
+            excel_file = io.BytesIO(f.read())
+            excel_sheets = pd.read_excel(excel_file, sheet_name=None)
             text_parts = []
-            i = 0
-            while i < len(raw):
-                idx = raw.find(b'BT', i)
-                if idx == -1:
-                    break
-                end = raw.find(b'ET', idx)
-                if end == -1:
-                    break
-                chunk = raw[idx:end]
-                for part in chunk.split(b'(')[1:]:
-                    close = part.find(b')')
-                    if close > -1:
-                        text_parts.append(part[:close].decode('latin-1', errors='replace'))
-                i = end + 2
-            content = ' '.join(text_parts) if text_parts else "[PDF içeriği okunamadı, metin katmanı yok]"
-        except Exception:
-            content = "[PDF işlenemedi]"
-    return jsonify({"success": True, "content": content[:8000], "filename": f.filename})
+            for sheet_name, df in excel_sheets.items():
+                text_parts.append(f"--- Sayfa: {sheet_name} ---\n" + df.to_string(index=False))
+            content = '\n\n'.join(text_parts)
+            
+        # 5. CSV Tablo Dosyaları
+        elif ext == 'csv':
+            import io
+            import pandas as pd
+            csv_file = io.BytesIO(f.read())
+            df = pd.read_csv(csv_file)
+            content = df.to_string(index=False)
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Dosya işlenirken hata oluştu: {str(e)}"})
+
+    if not content.strip():
+        return jsonify({"success": False, "error": "Dosya içeriği boş veya metne dönüştürülemedi."})
+
+    # DÜZELTME: Sınır 8.000 karakterden Llama-3.3'ün devasa yapısına uygun olacak şekilde 120.000 karaktere çıkarıldı.
+    return jsonify({"success": True, "content": content[:120000], "filename": f.filename})
 
 # --- ADMIN PANEL ---
 @app.route('/admin')
