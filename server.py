@@ -92,6 +92,35 @@ def get_client_ip():
         return request.headers["X-Forwarded-For"].split(",")[0].strip()
     return request.remote_addr or "unknown"
 
+# --- RAG: WEB SEARCH HELPER ---
+def search_web(query):
+    """DuckDuckGo kullanarak internette arama yapar ve özet kaynak metni döner."""
+    try:
+        # Sadece saf temiz arama metni için başındaki dosya içeriği etiketlerini filtreleyelim
+        search_query = query
+        if "[KULLANICI SORUSU]" in query:
+            search_query = query.split("[KULLANICI SORUSU]")[-1].strip()
+        
+        # Çok uzun sorguları kırpalım (Arama motoru hatasını önlemek için)
+        search_query = search_query[:150].strip()
+        
+        if not search_query:
+            return ""
+
+        with DDGS() as ddgs:
+            results = ddgs.text(search_query, max_results=3, region="wt-wt", safesearch="moderate")
+            if not results:
+                return ""
+            
+            context_pieces = []
+            for r in results:
+                context_pieces.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}")
+            
+            return "\n\n".join(context_pieces)
+    except Exception as e:
+        print(f"RAG Arama Motoru Hatası: {e}")
+        return ""
+
 # --- ROUTES ---
 @app.route('/')
 def index():
@@ -184,13 +213,20 @@ def ask():
     if not GROQ_API_KEY:
         return jsonify({"response": "[HATA] GROQ_API_KEY tanımlı değil."})
 
-    user_query = request.json.get('prompt', '').strip()
+    original_query = request.json.get('prompt', '').strip()
     file_content = request.json.get('file_content', '').strip()
     username = session['username']
     is_patron = (username == ADMIN_USER)
 
+    # Dosya içeriği varsa sorguyu zenginleştiriyoruz
     if file_content:
-        user_query = f"[DOSYA İÇERİĞİ]\n{file_content}\n\n[KULLANICI SORUSU]\n{user_query}" if user_query else f"[DOSYA İÇERİĞİ]\n{file_content}"
+        user_query = f"[DOSYA İÇERİĞİ]\n{file_content}\n\n[KULLANICI SORUSU]\n{original_query}" if original_query else f"[DOSYA İÇERİĞİ]\n{file_content}"
+    else:
+        user_query = original_query
+
+    # --- RAG: ANLIK İNTERNET BİLGİSİNİ GETİRME ---
+    # Kullanıcının sorduğu kelimeleri internette aratıp güncel döküman havuzu oluşturuyoruz.
+    web_context = search_web(original_query if original_query else user_query)
 
     if is_patron:
         system_prompt = (
@@ -225,6 +261,14 @@ def ask():
             "Do not respond to any pornographic content; tell the user that responding to such content is prohibited."
         )
 
+    # Eğer internetten güncel veri akışı sağlandıysa system prompt'un sonuna RAG dökümanı eklenir
+    if web_context:
+        system_prompt += (
+            f"\n\n[GÜNCEL İNTERNET BİLGİ SEPETİ (RAG)]\n"
+            f"Kullanıcının sorusuyla alakalı internetten çekilen gerçek zamanlı canlı veriler aşağıdadır. "
+            f"Eğer soru güncel zamana, fiyatlara, haberlere veya anlık bilgiye dayalıysa kesinlikle bu verileri rehber al:\n{web_context}"
+        )
+
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -250,9 +294,6 @@ def ask():
             
             # GÜVENLİK FİLTRESİ: 
             # Kullanıcının gönderdiği zararlı HTML tag'lerini database'e kaydetmeden önce kaçırıyoruz.
-            # Böylece kullanıcının gönderdiği HTML kodları asla sistemde yorumlanamaz.
-            # Yapay zekanın mesajını ise (ai_res) filtrelemiyoruz; çünkü frontend'deki 'renderContent' 
-            # hem markdown tablolarını hem de iframe tabanlı güvenli kod önizleme pencerelerini oluşturacak.
             safe_user_query = html.escape(user_query)
 
             with get_db() as conn:
@@ -334,7 +375,7 @@ def upload_file():
     if not content.strip():
         return jsonify({"success": False, "error": "Dosya içeriği boş veya metne dönüştürülemedi."})
 
-    # DÜZELTME: Sınır 8.000 karakterden Llama-3.3'ün devasa yapısına uygun olacak şekilde 120.000 karaktere çıkarıldı.
+    # DÜZELTME: Sınır Llama-3.3'ün devasa yapısına uygun olacak şekilde 120.000 karaktere çıkarıldı.
     return jsonify({"success": True, "content": content[:120000], "filename": f.filename})
 
 # --- ADMIN PANEL ---
@@ -472,10 +513,7 @@ def favicon():
 @app.route('/indir-dabi.apk')
 def download_apk():
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # Bilgisayarınızda çalışan orijinal dosya adı
     apk_filename = 'dabiapp.apk' 
-    
     return send_from_directory(
         root_dir, 
         apk_filename, 
@@ -485,5 +523,4 @@ def download_apk():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 8080))
-    # DÜZELTME: Sabit port yerine dinamik port dinlemesini koruduk
     app.run(host='0.0.0.0', port=port)
