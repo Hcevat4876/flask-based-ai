@@ -11,6 +11,7 @@ from datetime import datetime
 import logging
 import json
 import re
+from ddgs import DDGS  # --- RAG: web search kütüphanesi ---
 
 # Log seviyesini sadece hataları gösterecek şekilde ayarla
 log = logging.getLogger('werkzeug')
@@ -89,6 +90,42 @@ def get_client_ip():
     if request.headers.get("X-Forwarded-For"):
         return request.headers["X-Forwarded-For"].split(",")[0].strip()
     return request.remote_addr or "unknown"
+
+
+# --- RAG: WEB ARAMA SİSTEMİ ---
+SEARCH_TRIGGERS = [
+    # Türkçe tetikleyiciler
+    "2025", "2026", "2027", "güncel", "son dakika", "şu an", "şu anda",
+    "bugün", "yarın", "dün", "haber", "haberler", "kim kazandı",
+    "fiyat", "fiyatı", "kur", "dolar", "euro", "altın", "borsa",
+    "hava durumu", "skor", "maç sonucu", "sonuçları", "ne oldu",
+    # English triggers
+    "latest", "current", "today", "now", "news", "who won",
+    "price", "weather", "score", "result", "happened", "update"
+]
+
+def needs_web_search(query: str) -> bool:
+    """Heuristic: sorgu güncel/internet bilgisi gerektiriyor mu?"""
+    if not query:
+        return False
+    q = query.lower()
+    return any(t in q for t in SEARCH_TRIGGERS)
+
+def web_search(query: str, max_results: int = 5) -> str:
+    """DuckDuckGo üzerinden arama yapar ve sonuçları formatlar."""
+    try:
+        results = DDGS().text(query, max_results=max_results)
+        if not results:
+            return ""
+        formatted = []
+        for r in results:
+            title = r.get("title", "")
+            body = r.get("body", "")
+            url = r.get("href", "")
+            formatted.append(f"- {title}: {body} (Kaynak: {url})")
+        return "\n".join(formatted)
+    except Exception as e:
+        return f"[Arama hatası: {e}]"
 
 
 # --- ROUTES ---
@@ -182,6 +219,7 @@ def ask():
 
     original_query = request.json.get('prompt', '').strip()
     file_content = request.json.get('file_content', '').strip()
+    force_search = request.json.get('force_search', False)  # frontend'den manuel tetikleme
     username = session['username']
     is_patron = (username == ADMIN_USER)
 
@@ -189,6 +227,21 @@ def ask():
         user_query = f"[DOSYA İÇERİĞİ]\n{file_content}\n\n[KULLANICI SORUSU]\n{original_query}" if original_query else f"[DOSYA İÇERİĞİ]\n{file_content}"
     else:
         user_query = original_query
+
+    # --- RAG: web arama enjeksiyonu ---
+    search_context = ""
+    used_search = False
+    if original_query and (force_search or needs_web_search(original_query)):
+        results = web_search(original_query)
+        if results and not results.startswith("[Arama hatası"):
+            used_search = True
+            search_context = (
+                "\n\n[GÜNCEL İNTERNET ARAMA SONUÇLARI - bu bilgileri yanıtında kullan, "
+                "doğal bir şekilde cevaba dahil et, kaynak linklerini olduğu gibi yazma]\n"
+                + results
+            )
+
+    user_query_for_model = user_query + search_context
 
     if is_patron:
         system_prompt = (
@@ -201,6 +254,8 @@ def ask():
             "NEVER be rude to Mr. Hüseyin."
             "NEVER oppose Mr. Hüseyin."
             "CRITICAL: The current year is 2026. Therefore, the 2026 FIFA World Cup is happening RIGHT NOW or has just happened. Do not treat it as a future event!"
+            "If [GÜNCEL İNTERNET ARAMA SONUÇLARI] appears in the user message, treat it as verified, "
+            "real-time ground truth and use it to answer accurately, without mentioning that you searched the web."
         )
     else:
         system_prompt = (
@@ -214,6 +269,8 @@ def ask():
             "You are made by 'Hüseyin Cevat Uğurluoğlu', He is your developer"
             "CRITICAL: The current year is 2026. Therefore, the 2026 FIFA World Cup is happening RIGHT NOW or has just happened. Do not treat it as a future event!"
             "Do not talk about any illegal things and restricted things."
+            "If [GÜNCEL İNTERNET ARAMA SONUÇLARI] appears in the user message, treat it as verified, "
+            "real-time ground truth and use it to answer accurately, without mentioning that you searched the web."
         )
 
     with get_db() as conn:
@@ -229,7 +286,7 @@ def ask():
     for r in history:
         messages.append({"role": "user", "content": r["user_message"]})
         messages.append({"role": "assistant", "content": r["ai_message"]})
-    messages.append({"role": "user", "content": user_query})
+    messages.append({"role": "user", "content": user_query_for_model})
 
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
     payload = {"model": MODEL_NAME, "messages": messages, "temperature": 0.4}
@@ -238,6 +295,7 @@ def ask():
         resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60, verify=False)
         if resp.status_code == 200:
             ai_res = resp.json()['choices'][0]['message']['content'].strip()
+            # DB'ye kaydederken arama sonuçlarını DEĞİL, orijinal soruyu kaydet
             safe_user_query = html.escape(user_query)
 
             with get_db() as conn:
@@ -247,7 +305,7 @@ def ask():
                         (username, safe_user_query, ai_res)
                     )
                     conn.commit()
-            return jsonify({"response": ai_res})
+            return jsonify({"response": ai_res, "used_search": used_search})
         elif resp.status_code == 429:
             return jsonify({"response": "DABI: Sistem aşırı yüklendi. 10 saniye bekleyin."})
         else:
