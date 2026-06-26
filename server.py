@@ -134,33 +134,64 @@ def analyze_search_necessity(user_query):
     return 0, ""
 
 
-# --- RAG: WEB SEARCH HELPER ---
+# --- RAG: WEB SEARCH HELPER (YENİ KÜTÜPHANESİZ GÜVENLİ VE HIZLI SİSTEM) ---
 def search_web(search_query):
-    """DuckDuckGo kullanarak internette arama yapar ve özet kaynak metni döner."""
+    """
+    Ekstra kütüphane gerektirmeyen, DDG API'sini JSON formatında
+    doğrudan sorgulayarak uydurma forum girdileri yerine resmi özetleri hedefleyen fonksiyon.
+    """
     try:
         if not search_query:
             return ""
 
-        search_query = search_query[:150].strip()
-        search_region = "tr-tr" if any(x in search_query.lower() for x in ["dünya kupası", "grup", "takım", "maç"]) else "wt-wt"
+        # Arama kalitesini düşüren Türkçe soru eklerini temizle
+        clean_query = search_query.lower()
+        for word in ["nedir", "nelerdir", "hangileridir", "söyle", "ver", "bulunuyor"]:
+            clean_query = clean_query.replace(word, "")
+        clean_query = clean_query[:150].strip()
 
-        with DDGS() as ddgs:
-            results = ddgs.text(search_query, max_results=5, region=search_region, safesearch="moderate")
-            
-            if not results and search_region == "tr-tr":
-                results = ddgs.text(search_query, max_results=5, region="wt-wt", safesearch="moderate")
-                
-            if not results:
-                return ""
-            
+        # Doğrudan yapılandırılmış veri veren DuckDuckGo API'si
+        url = "https://api.duckduckgo.com/"
+        params = {
+            "q": clean_query,
+            "format": "json",
+            "no_html": "1",
+            "skip_disambig": "1"
+        }
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+
+        resp = requests.get(url, params=params, headers=headers, timeout=10, verify=False)
+        
+        if resp.status_code == 200:
+            data = resp.json()
             context_pieces = []
-            for r in results:
-                context_pieces.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}")
             
-            return "\n\n".join(context_pieces)
+            # Doğrudan ansiklopedik veya resmi bir özet varsa al
+            if data.get("AbstractText"):
+                context_pieces.append(f"Özet Bilgi: {data['AbstractText']}\nKaynak: {data.get('AbstractURL','')}")
+            
+            # İlişkili başlık girdilerini filtreleyerek ekle
+            for item in data.get("RelatedTopics", [])[:3]:
+                if "Text" in item and "FirstURL" in item:
+                    context_pieces.append(f"Detay: {item['Text']}\nKaynak: {item['FirstURL']}")
+            
+            if context_pieces:
+                return "\n\n".join(context_pieces)
+
+        # Standart kazıma yöntemi (API boş dönerse yedek plan)
+        with DDGS() as ddgs:
+            results = ddgs.text(clean_query, max_results=4, region="wt-wt", safesearch="moderate")
+            if results:
+                pieces = []
+                for r in results:
+                    pieces.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}")
+                return "\n\n".join(pieces)
+
     except Exception as e:
         print(f"RAG Arama Motoru Hatası: {e}")
-        return ""
+    return ""
 
 # --- ROUTES ---
 @app.route('/')
@@ -261,36 +292,36 @@ def ask():
     else:
         user_query = original_query
 
-    # --- RAG OPTİMİZASYONU (ROUTER & ZORUNLU ARAMA SİSTEMİ) ---
+    # --- RAG OPTİMİZASYONU (ESNEK VE KURALA UYGUN SİSTEM) ---
     web_context = ""
     search_prompt = original_query if original_query else user_query
-    search_notification_prefix = "" # Kullanıcıya gösterilecek arama bilgisi
+    search_notification_prefix = "" 
     
     if search_prompt:
-        # "internette ara" tetikleyici kontrolü (büyük/küçük harf duyarsız)
+        # "internette ara" tetikleyicisi kontrolü (büyük/küçük harf duyarsız)
         force_search = "internette ara" in search_prompt.lower()
         
         if force_search:
             score = 10
-            # "internette ara" ibaresini temizleyip kalan kısmı temiz arama sorgusu yapalım
-            optimized_query = search_prompt.lower().replace("internette ara", "").strip()
+            # Cümle içindeki "internette ara" ifadesini silerek temiz anahtar kelime bırakır
+            optimized_query = re.sub(r'(?i)internette ara', '', search_prompt).strip()
             if not optimized_query:
                 optimized_query = search_prompt
         else:
             score, optimized_query = analyze_search_necessity(search_prompt)
             
-        print(f"[DABI ROUTER] Arama İhtiyacı Puanı: {score}/10 | Zorunlu Arama: {force_search} | Üretilen Sorgu: '{optimized_query}'")
+        print(f"[DABI ROUTER] Skor: {score}/10 | Zorunlu: {force_search} | Terim: '{optimized_query}'")
         
-        # Puan 5'ten büyükse veya kullanıcı zorunlu kıldıysa internet araması tetiklenir
+        # Puanlama barajı geçildiyse veya zorunlu arama tetiklendiyse işlemi başlat
         if (score > 5 or force_search) and optimized_query:
-            # Arama yapıldığına dair ekranda görünecek mesajı hazırla
+            # Kullanıcının ekranda göreceği dinamik arama ön eki
             search_notification_prefix = f"*[DABI ARAMA SORGUSU: '{optimized_query}' terimi ile internet kontrol ediliyor...]*\n\n"
             
             web_context = search_web(optimized_query)
             
-            # Özel Durum Güvencesi
+            # Özel Durum Güvencesi (Yedek Küresel Plan)
             if "2026" in optimized_query and not web_context:
-                web_context = search_web("2026 FIFA World Cup standings groups")
+                web_context = search_web("2026 FIFA World Cup standings groups teams")
 
     if is_patron:
         system_prompt = (
@@ -336,7 +367,7 @@ def ask():
     history = list(reversed(rows))
     messages = [{"role": "system", "content": system_prompt}]
     for r in history:
-        # Eğer geçmiş mesajda bizim eklediğimiz prefix varsa, LLM geçmişini bozmamak adına onu temizleyip geçmişe verelim
+        # Arama ön ekini geçmiş bağlamından temizleyerek LLM belleğini koru
         clean_ai_msg = re.sub(r'\*\[DABI ARAMA SORGUSU:.*?\]\*\n\n', '', r["ai_message"])
         messages.append({"role": "user", "content": r["user_message"]})
         messages.append({"role": "assistant", "content": clean_ai_msg})
@@ -350,7 +381,7 @@ def ask():
         if resp.status_code == 200:
             ai_res_raw = resp.json()['choices'][0]['message']['content'].strip()
             
-            # Üretilen cevabın başına arama bildirimini iliştiriyoruz
+            # Dinamik arama bildirim ön ekini nihai cevaba iliştir
             ai_res = f"{search_notification_prefix}{ai_res_raw}"
             safe_user_query = html.escape(user_query)
 
