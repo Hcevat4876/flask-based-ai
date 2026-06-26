@@ -111,10 +111,24 @@ def needs_web_search(query: str) -> bool:
     q = query.lower()
     return any(t in q for t in SEARCH_TRIGGERS)
 
+def detect_lang_region(query: str) -> str:
+    """Sorgudaki Türkçe karakter/kelimelere göre bölge belirler."""
+    turkish_chars = set("çğıöşüÇĞİÖŞÜ")
+    turkish_words = {"ne", "nasıl", "kim", "kaç", "nedir", "mi", "mı", "mu", "mü",
+                      "ve", "ile", "için", "bugün", "güncel", "haber", "fiyat", "kur"}
+    q_lower = query.lower()
+    if any(c in turkish_chars for c in query) or any(w in q_lower.split() for w in turkish_words):
+        return "tr-tr"
+    return "wt-wt"
+
 def web_search(query: str, max_results: int = 5) -> str:
     """DuckDuckGo üzerinden arama yapar ve sonuçları formatlar."""
+    region = detect_lang_region(query)
     try:
-        results = DDGS().text(query, max_results=max_results)
+        results = DDGS().text(query, region=region, max_results=max_results)
+        if not results and region != "wt-wt":
+            # Bölgeye özgü sonuç yoksa global aramaya geri dön
+            results = DDGS().text(query, region="wt-wt", max_results=max_results)
         if not results:
             return ""
         formatted = []
@@ -236,8 +250,10 @@ def ask():
         if results and not results.startswith("[Arama hatası"):
             used_search = True
             search_context = (
-                "\n\n[GÜNCEL İNTERNET ARAMA SONUÇLARI - bu bilgileri yanıtında kullan, "
-                "doğal bir şekilde cevaba dahil et, kaynak linklerini olduğu gibi yazma]\n"
+                "\n\n[GÜNCEL İNTERNET ARAMA SONUÇLARI]\n"
+                "Aşağıdaki arama sonuçlarını oku, bilgiyi kendi cümlelerinle ve akıcı bir "
+                "Türkçeyle özetleyerek cevabına dahil et. Sonuçları olduğu gibi kopyalama, "
+                "kaynak linklerini yazma.\n"
                 + results
             )
 
