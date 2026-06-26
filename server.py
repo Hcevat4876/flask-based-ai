@@ -6,7 +6,6 @@ import psycopg2
 import psycopg2.extras
 import urllib3
 import html  # DÜZELTME: Kullanıcı girdilerindeki HTML'leri etkisizleştirmek için
-from html.parser import HTMLParser
 from dotenv import load_dotenv
 from datetime import datetime
 import logging
@@ -90,122 +89,6 @@ def get_client_ip():
     if request.headers.get("X-Forwarded-For"):
         return request.headers["X-Forwarded-For"].split(",")[0].strip()
     return request.remote_addr or "unknown"
-
-
-# --- LLM TABANLI ARAMA KARAR MEKANİZMASI (ROUTER) ---
-def analyze_search_necessity(user_query):
-    """
-    Kullanıcının sorusunu analiz eder, internet araması gerekip gerekmediğini 10 üzerinden puanlar
-    ve arama gerekiyorsa en optimize arama motoru sorgusunu üretir.
-    """
-    if not GROQ_API_KEY:
-        return 0, ""
-        
-    router_prompt = (
-        "Sen bir arama analizörüsün. Görevin, kullanıcının sorduğu sorunun güncel internet araması gerektirip gerektirmediğini analiz etmektir.\n"
-        "Özellikle güncel olaylar (2024, 2025, 2026 yılları), canlı skorlar, hava durumu, popüler kültür, yeni teknolojiler, "
-        "futbol turnuvaları (Örn: 2026 Dünya Kupası), veya gerçek zamanlı bilgi gerektiren sorular için yüksek puan vermelisin.\n\n"
-        "Senden Kesinlikle SADECE şu JSON formatında cevap vermeni istiyorum, başka hiçbir metin yazma:\n"
-        "{\n"
-        "  \"score\": <1-10 arasında bir tam sayı>,\n"
-        "  \"search_query\": \"<arama motoru için en optimize, gereksiz eklerden arınmış, arama kalitesini artıracak anahtar kelimeler veya boş string>\"\n"
-        "}\n\n"
-        f"Kullanıcı Sorusu: {user_query}"
-    )
-    
-    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-    payload = {
-        "model": MODEL_NAME, 
-        "messages": [{"role": "user", "content": router_prompt}],
-        "temperature": 0.1
-    }
-    
-    try:
-        resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10, verify=False)
-        if resp.status_code == 200:
-            content = resp.json()['choices'][0]['message']['content'].strip()
-            match = re.search(r'\{.*\}', content, re.DOTALL)
-            if match:
-                data = json.loads(match.group(0))
-                return int(data.get("score", 0)), data.get("search_query", "").strip()
-    except Exception as e:
-        print(f"Router Hatası: {e}")
-    
-    return 0, ""
-
-
-# --- DAHİLİ HTML TEMİZLEYİCİ YARDIMCI SINIF ---
-class GoogleHTMLStripper(HTMLParser):
-    def __init__(self):
-        super().__init__()
-        self.reset()
-        self.fed = []
-    def handle_data(self, d):
-        self.fed.append(d)
-    def get_data(self):
-        return "".join(self.fed)
-
-def strip_tags(html_str):
-    s = GoogleHTMLStripper()
-    s.feed(html_str)
-    return s.get_data()
-
-
-# --- RAG: WEB SEARCH HELPER (YENİ EK KÜTÜPHANESİZ GÜVENLİ GOOGLE SİSTEMİ) ---
-def search_web(search_query):
-    """
-    Ekstra hiçbir kütüphane veya API KEY gerektirmeyen, doğrudan Google'ın temel
-    arama arayüzünü sorgulayarak en kararlı biçimde başlık ve özetleri çeken fonksiyon.
-    """
-    try:
-        if not search_query:
-            return ""
-
-        # Arama kalitesini düşüren Türkçe soru eklerini temizle
-        clean_query = search_query.lower()
-        for word in ["nedir", "nelerdir", "hangileridir", "söyle", "ver", "bulunuyor"]:
-            clean_query = clean_query.replace(word, "")
-        clean_query = clean_query[:150].strip()
-
-        # Google'ın bot engeline takılmamak için standart tarayıcı kimliği (User-Agent)
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-        }
-        
-        # Türkçe sonuç doğruluğu için hl=tr parametresi eklenmiştir
-        url = "https://www.google.com/search"
-        params = {"q": clean_query, "hl": "tr"}
-
-        resp = requests.get(url, params=params, headers=headers, timeout=10, verify=False)
-        
-        if resp.status_code == 200:
-            html_content = resp.text
-            context_pieces = []
-            
-            # Google'ın temel HTML yapısındaki başlık (h3) ve açıklama metni içeren blokları yakalar
-            blocks = re.findall(r'<h3[^>]*><div[^>]*>(.*?)</div></h3>.*?<div class="BNeawe s3v9rd AP7Wnd">(.*?)</div>', html_content, re.DOTALL)
-            
-            # Eğer yukarıdaki şablon boş kalırsa alternatif mobil uyumlu konteynerleri yakalar
-            if not blocks:
-                blocks = re.findall(r'<div class="BNeawe vvjw0b AP7Wnd">(.*?)</div>.*?<div class="BNeawe s3v9rd AP7Wnd">(.*?)</div>', html_content, re.DOTALL)
-
-            for title, body in blocks[:4]:
-                clean_title = strip_tags(title).strip()
-                clean_body = strip_tags(body).strip()
-                
-                # Google özetlerinin başına eklenen gereksiz tarih kalıplarını temizle
-                clean_body = re.sub(r'^\d+ \w+ \d{4} \.\.\. ', '', clean_body)
-                
-                if clean_title and clean_body:
-                    context_pieces.append(f"Başlık: {clean_title}\nÖzet: {clean_body}")
-            
-            if context_pieces:
-                return "\n\n".join(context_pieces)
-                
-    except Exception as e:
-        print(f"RAG Google Arama Motoru Hatası: {e}")
-        
-    return ""
 
 
 # --- ROUTES ---
@@ -307,32 +190,6 @@ def ask():
     else:
         user_query = original_query
 
-    # --- RAG OPTİMİZASYONU ---
-    web_context = ""
-    search_prompt = original_query if original_query else user_query
-    search_notification_prefix = "" 
-    
-    if search_prompt:
-        force_search = "internette ara" in search_prompt.lower()
-        
-        if force_search:
-            score = 10
-            optimized_query = re.sub(r'(?i)internette ara', '', search_prompt).strip()
-            if not optimized_query:
-                optimized_query = search_prompt
-        else:
-            score, optimized_query = analyze_search_necessity(search_prompt)
-            
-        print(f"[DABI ROUTER] Skor: {score}/10 | Zorunlu: {force_search} | Terim: '{optimized_query}'")
-        
-        if (score > 5 or force_search) and optimized_query:
-            search_notification_prefix = f"*[DABI ARAMA SORGUSU: '{optimized_query}' terimi ile internet kontrol ediliyor...]*\n\n"
-            
-            web_context = search_web(optimized_query)
-            
-            if "2026" in optimized_query and not web_context:
-                web_context = search_web("2026 FIFA World Cup standings groups teams")
-
     if is_patron:
         system_prompt = (
             "Your name is DABI. Your name stands for 'Dijital Akıllı Bilgi Işlemcisi'."
@@ -359,13 +216,6 @@ def ask():
             "Do not talk about any illegal things and restricted things."
         )
 
-    if web_context:
-        system_prompt += (
-            f"\n\n[GÜNCEL İNTERNET BİLGİ SEPETİ (RAG)]\n"
-            f"Kullanıcının sorusuyla alakalı internetten çekilen gerçek zamanlı canlı veriler aşağıdadır. "
-            f"Kesinlikle hafızandaki eski yılları değil, doğrudan bu güncel verileri rehber alarak cevap üret:\n{web_context}"
-        )
-
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -377,9 +227,8 @@ def ask():
     history = list(reversed(rows))
     messages = [{"role": "system", "content": system_prompt}]
     for r in history:
-        clean_ai_msg = re.sub(r'\*\[DABI ARAMA SORDUSU:.*?\]\*\n\n', '', r["ai_message"])
         messages.append({"role": "user", "content": r["user_message"]})
-        messages.append({"role": "assistant", "content": clean_ai_msg})
+        messages.append({"role": "assistant", "content": r["ai_message"]})
     messages.append({"role": "user", "content": user_query})
 
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
@@ -388,9 +237,7 @@ def ask():
     try:
         resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60, verify=False)
         if resp.status_code == 200:
-            ai_res_raw = resp.json()['choices'][0]['message']['content'].strip()
-            
-            ai_res = f"{search_notification_prefix}{ai_res_raw}"
+            ai_res = resp.json()['choices'][0]['message']['content'].strip()
             safe_user_query = html.escape(user_query)
 
             with get_db() as conn:
