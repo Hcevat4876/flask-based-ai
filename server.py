@@ -1,12 +1,12 @@
 from flask import Flask, request, render_template, jsonify, session, redirect, url_for, send_from_directory, current_app, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
-from duckduckgo_search import DDGS
 import os
 import psycopg2
 import psycopg2.extras
 import urllib3
 import html  # DÜZELTME: Kullanıcı girdilerindeki HTML'leri etkisizleştirmek için
+from html.parser import HTMLParser
 from dotenv import load_dotenv
 from datetime import datetime
 import logging
@@ -134,11 +134,28 @@ def analyze_search_necessity(user_query):
     return 0, ""
 
 
-# --- RAG: WEB SEARCH HELPER (YENİ KÜTÜPHANESİZ GÜVENLİ VE HIZLI SİSTEM) ---
+# --- DAHİLİ HTML TEMİZLEYİCİ YARDIMCI SINIF ---
+class GoogleHTMLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.fed = []
+    def handle_data(self, d):
+        self.fed.append(d)
+    def get_data(self):
+        return "".join(self.fed)
+
+def strip_tags(html_str):
+    s = GoogleHTMLStripper()
+    s.feed(html_str)
+    return s.get_data()
+
+
+# --- RAG: WEB SEARCH HELPER (YENİ EK KÜTÜPHANESİZ GÜVENLİ GOOGLE SİSTEMİ) ---
 def search_web(search_query):
     """
-    Ekstra kütüphane gerektirmeyen, DDG API'sini JSON formatında
-    doğrudan sorgulayarak uydurma forum girdileri yerine resmi özetleri hedefleyen fonksiyon.
+    Ekstra hiçbir kütüphane veya API KEY gerektirmeyen, doğrudan Google'ın temel
+    arama arayüzünü sorgulayarak en kararlı biçimde başlık ve özetleri çeken fonksiyon.
     """
     try:
         if not search_query:
@@ -150,48 +167,46 @@ def search_web(search_query):
             clean_query = clean_query.replace(word, "")
         clean_query = clean_query[:150].strip()
 
-        # Doğrudan yapılandırılmış veri veren DuckDuckGo API'si
-        url = "https://api.duckduckgo.com/"
-        params = {
-            "q": clean_query,
-            "format": "json",
-            "no_html": "1",
-            "skip_disambig": "1"
-        }
+        # Google'ın bot engeline takılmamak için standart tarayıcı kimliği (User-Agent)
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
         }
+        
+        # Türkçe sonuç doğruluğu için hl=tr parametresi eklenmiştir
+        url = "https://www.google.com/search"
+        params = {"q": clean_query, "hl": "tr"}
 
         resp = requests.get(url, params=params, headers=headers, timeout=10, verify=False)
         
         if resp.status_code == 200:
-            data = resp.json()
+            html_content = resp.text
             context_pieces = []
             
-            # Doğrudan ansiklopedik veya resmi bir özet varsa al
-            if data.get("AbstractText"):
-                context_pieces.append(f"Özet Bilgi: {data['AbstractText']}\nKaynak: {data.get('AbstractURL','')}")
+            # Google'ın temel HTML yapısındaki başlık (h3) ve açıklama metni içeren blokları yakalar
+            blocks = re.findall(r'<h3[^>]*><div[^>]*>(.*?)</div></h3>.*?<div class="BNeawe s3v9rd AP7Wnd">(.*?)</div>', html_content, re.DOTALL)
             
-            # İlişkili başlık girdilerini filtreleyerek ekle
-            for item in data.get("RelatedTopics", [])[:3]:
-                if "Text" in item and "FirstURL" in item:
-                    context_pieces.append(f"Detay: {item['Text']}\nKaynak: {item['FirstURL']}")
+            # Eğer yukarıdaki şablon boş kalırsa alternatif mobil uyumlu konteynerleri yakalar
+            if not blocks:
+                blocks = re.findall(r'<div class="BNeawe vvjw0b AP7Wnd">(.*?)</div>.*?<div class="BNeawe s3v9rd AP7Wnd">(.*?)</div>', html_content, re.DOTALL)
+
+            for title, body in blocks[:4]:
+                clean_title = strip_tags(title).strip()
+                clean_body = strip_tags(body).strip()
+                
+                # Google özetlerinin başına eklenen gereksiz tarih kalıplarını temizle
+                clean_body = re.sub(r'^\d+ \w+ \d{4} \.\.\. ', '', clean_body)
+                
+                if clean_title and clean_body:
+                    context_pieces.append(f"Başlık: {clean_title}\nÖzet: {clean_body}")
             
             if context_pieces:
                 return "\n\n".join(context_pieces)
-
-        # Standart kazıma yöntemi (API boş dönerse yedek plan)
-        with DDGS() as ddgs:
-            results = ddgs.text(clean_query, max_results=4, region="wt-wt", safesearch="moderate")
-            if results:
-                pieces = []
-                for r in results:
-                    pieces.append(f"Başlık: {r['title']}\nÖzet: {r['body']}\nKaynak: {r['href']}")
-                return "\n\n".join(pieces)
-
+                
     except Exception as e:
-        print(f"RAG Arama Motoru Hatası: {e}")
+        print(f"RAG Google Arama Motoru Hatası: {e}")
+        
     return ""
+
 
 # --- ROUTES ---
 @app.route('/')
@@ -292,18 +307,16 @@ def ask():
     else:
         user_query = original_query
 
-    # --- RAG OPTİMİZASYONU (ESNEK VE KURALA UYGUN SİSTEM) ---
+    # --- RAG OPTİMİZASYONU ---
     web_context = ""
     search_prompt = original_query if original_query else user_query
     search_notification_prefix = "" 
     
     if search_prompt:
-        # "internette ara" tetikleyicisi kontrolü (büyük/küçük harf duyarsız)
         force_search = "internette ara" in search_prompt.lower()
         
         if force_search:
             score = 10
-            # Cümle içindeki "internette ara" ifadesini silerek temiz anahtar kelime bırakır
             optimized_query = re.sub(r'(?i)internette ara', '', search_prompt).strip()
             if not optimized_query:
                 optimized_query = search_prompt
@@ -312,14 +325,11 @@ def ask():
             
         print(f"[DABI ROUTER] Skor: {score}/10 | Zorunlu: {force_search} | Terim: '{optimized_query}'")
         
-        # Puanlama barajı geçildiyse veya zorunlu arama tetiklendiyse işlemi başlat
         if (score > 5 or force_search) and optimized_query:
-            # Kullanıcının ekranda göreceği dinamik arama ön eki
             search_notification_prefix = f"*[DABI ARAMA SORGUSU: '{optimized_query}' terimi ile internet kontrol ediliyor...]*\n\n"
             
             web_context = search_web(optimized_query)
             
-            # Özel Durum Güvencesi (Yedek Küresel Plan)
             if "2026" in optimized_query and not web_context:
                 web_context = search_web("2026 FIFA World Cup standings groups teams")
 
@@ -367,8 +377,7 @@ def ask():
     history = list(reversed(rows))
     messages = [{"role": "system", "content": system_prompt}]
     for r in history:
-        # Arama ön ekini geçmiş bağlamından temizleyerek LLM belleğini koru
-        clean_ai_msg = re.sub(r'\*\[DABI ARAMA SORGUSU:.*?\]\*\n\n', '', r["ai_message"])
+        clean_ai_msg = re.sub(r'\*\[DABI ARAMA SORDUSU:.*?\]\*\n\n', '', r["ai_message"])
         messages.append({"role": "user", "content": r["user_message"]})
         messages.append({"role": "assistant", "content": clean_ai_msg})
     messages.append({"role": "user", "content": user_query})
@@ -381,7 +390,6 @@ def ask():
         if resp.status_code == 200:
             ai_res_raw = resp.json()['choices'][0]['message']['content'].strip()
             
-            # Dinamik arama bildirim ön ekini nihai cevaba iliştir
             ai_res = f"{search_notification_prefix}{ai_res_raw}"
             safe_user_query = html.escape(user_query)
 
