@@ -92,7 +92,7 @@ def get_client_ip():
     return request.remote_addr or "unknown"
 
 
-# --- YENİ: LLM TABANLI ARAMA KARAR MEKANİZMASI (ROUTER) ---
+# --- LLM TABANLI ARAMA KARAR MEKANİZMASI (ROUTER) ---
 def analyze_search_necessity(user_query):
     """
     Kullanıcının sorusunu analiz eder, internet araması gerekip gerekmediğini 10 üzerinden puanlar
@@ -117,14 +117,13 @@ def analyze_search_necessity(user_query):
     payload = {
         "model": MODEL_NAME, 
         "messages": [{"role": "user", "content": router_prompt}],
-        "temperature": 0.1 # Tutarlılık için olabildiğince düşük
+        "temperature": 0.1
     }
     
     try:
         resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10, verify=False)
         if resp.status_code == 200:
             content = resp.json()['choices'][0]['message']['content'].strip()
-            # JSON'ı temizle (Bazen LLM'ler ```json ... ``` bloğu içinde verebiliyor)
             match = re.search(r'\{.*\}', content, re.DOTALL)
             if match:
                 data = json.loads(match.group(0))
@@ -135,7 +134,7 @@ def analyze_search_necessity(user_query):
     return 0, ""
 
 
-# --- RAG: WEB SEARCH HELPER (Geliştirildi) ---
+# --- RAG: WEB SEARCH HELPER ---
 def search_web(search_query):
     """DuckDuckGo kullanarak internette arama yapar ve özet kaynak metni döner."""
     try:
@@ -143,9 +142,7 @@ def search_web(search_query):
             return ""
 
         search_query = search_query[:150].strip()
-        
-        # Türkçe anahtar kelimeler için Türkiye bölgesini, yoksa genel bölgeyi seç
-        search_region = "tr-tr" if any(x in search_query.lower() for x in ["dünya kupası", "grup", "takım", "maç", "nedir", "kimdir"]) else "wt-wt"
+        search_region = "tr-tr" if any(x in search_query.lower() for x in ["dünya kupası", "grup", "takım", "maç"]) else "wt-wt"
 
         with DDGS() as ddgs:
             results = ddgs.text(search_query, max_results=5, region=search_region, safesearch="moderate")
@@ -264,20 +261,34 @@ def ask():
     else:
         user_query = original_query
 
-    # --- YENİLENEN RAG OPTİMİZASYONU (ROUTER SİSTEMİ) ---
+    # --- RAG OPTİMİZASYONU (ROUTER & ZORUNLU ARAMA SİSTEMİ) ---
     web_context = ""
     search_prompt = original_query if original_query else user_query
+    search_notification_prefix = "" # Kullanıcıya gösterilecek arama bilgisi
     
     if search_prompt:
-        # Sorunun internet ihtiyacını puanla ve optimize sorguyu al
-        score, optimized_query = analyze_search_necessity(search_prompt)
-        print(f"[DABI ROUTER] Arama İhtiyacı Puanı: {score}/10 | Üretilen Sorgu: '{optimized_query}'")
+        # "internette ara" tetikleyici kontrolü (büyük/küçük harf duyarsız)
+        force_search = "internette ara" in search_prompt.lower()
         
-        # Puan 5'ten büyükse internet araması tetiklenir
-        if score > 5 and optimized_query:
+        if force_search:
+            score = 10
+            # "internette ara" ibaresini temizleyip kalan kısmı temiz arama sorgusu yapalım
+            optimized_query = search_prompt.lower().replace("internette ara", "").strip()
+            if not optimized_query:
+                optimized_query = search_prompt
+        else:
+            score, optimized_query = analyze_search_necessity(search_prompt)
+            
+        print(f"[DABI ROUTER] Arama İhtiyacı Puanı: {score}/10 | Zorunlu Arama: {force_search} | Üretilen Sorgu: '{optimized_query}'")
+        
+        # Puan 5'ten büyükse veya kullanıcı zorunlu kıldıysa internet araması tetiklenir
+        if (score > 5 or force_search) and optimized_query:
+            # Arama yapıldığına dair ekranda görünecek mesajı hazırla
+            search_notification_prefix = f"*[DABI ARAMA SORGUSU: '{optimized_query}' terimi ile internet kontrol ediliyor...]*\n\n"
+            
             web_context = search_web(optimized_query)
             
-            # Garanti mekanizması: Eğer 2026 dünya kupası aranıyor ama sonuç dönmediyse İngilizceye zorla
+            # Özel Durum Güvencesi
             if "2026" in optimized_query and not web_context:
                 web_context = search_web("2026 FIFA World Cup standings groups")
 
@@ -325,8 +336,10 @@ def ask():
     history = list(reversed(rows))
     messages = [{"role": "system", "content": system_prompt}]
     for r in history:
+        # Eğer geçmiş mesajda bizim eklediğimiz prefix varsa, LLM geçmişini bozmamak adına onu temizleyip geçmişe verelim
+        clean_ai_msg = re.sub(r'\*\[DABI ARAMA SORGUSU:.*?\]\*\n\n', '', r["ai_message"])
         messages.append({"role": "user", "content": r["user_message"]})
-        messages.append({"role": "assistant", "content": r["ai_message"]})
+        messages.append({"role": "assistant", "content": clean_ai_msg})
     messages.append({"role": "user", "content": user_query})
 
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
@@ -335,7 +348,10 @@ def ask():
     try:
         resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60, verify=False)
         if resp.status_code == 200:
-            ai_res = resp.json()['choices'][0]['message']['content'].strip()
+            ai_res_raw = resp.json()['choices'][0]['message']['content'].strip()
+            
+            # Üretilen cevabın başına arama bildirimini iliştiriyoruz
+            ai_res = f"{search_notification_prefix}{ai_res_raw}"
             safe_user_query = html.escape(user_query)
 
             with get_db() as conn:
