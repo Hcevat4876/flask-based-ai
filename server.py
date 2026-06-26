@@ -10,6 +10,8 @@ import html  # DÜZELTME: Kullanıcı girdilerindeki HTML'leri etkisizleştirmek
 from dotenv import load_dotenv
 from datetime import datetime
 import logging
+import json
+import re
 
 # Log seviyesini sadece hataları gösterecek şekilde ayarla
 log = logging.getLogger('werkzeug')
@@ -89,37 +91,65 @@ def get_client_ip():
         return request.headers["X-Forwarded-For"].split(",")[0].strip()
     return request.remote_addr or "unknown"
 
+
+# --- YENİ: LLM TABANLI ARAMA KARAR MEKANİZMASI (ROUTER) ---
+def analyze_search_necessity(user_query):
+    """
+    Kullanıcının sorusunu analiz eder, internet araması gerekip gerekmediğini 10 üzerinden puanlar
+    ve arama gerekiyorsa en optimize arama motoru sorgusunu üretir.
+    """
+    if not GROQ_API_KEY:
+        return 0, ""
+        
+    router_prompt = (
+        "Sen bir arama analizörüsün. Görevin, kullanıcının sorduğu sorunun güncel internet araması gerektirip gerektirmediğini analiz etmektir.\n"
+        "Özellikle güncel olaylar (2024, 2025, 2026 yılları), canlı skorlar, hava durumu, popüler kültür, yeni teknolojiler, "
+        "futbol turnuvaları (Örn: 2026 Dünya Kupası), veya gerçek zamanlı bilgi gerektiren sorular için yüksek puan vermelisin.\n\n"
+        "Senden Kesinlikle SADECE şu JSON formatında cevap vermeni istiyorum, başka hiçbir metin yazma:\n"
+        "{\n"
+        "  \"score\": <1-10 arasında bir tam sayı>,\n"
+        "  \"search_query\": \"<arama motoru için en optimize, gereksiz eklerden arınmış, arama kalitesini artıracak anahtar kelimeler veya boş string>\"\n"
+        "}\n\n"
+        f"Kullanıcı Sorusu: {user_query}"
+    )
+    
+    headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+    payload = {
+        "model": MODEL_NAME, 
+        "messages": [{"role": "user", "content": router_prompt}],
+        "temperature": 0.1 # Tutarlılık için olabildiğince düşük
+    }
+    
+    try:
+        resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=10, verify=False)
+        if resp.status_code == 200:
+            content = resp.json()['choices'][0]['message']['content'].strip()
+            # JSON'ı temizle (Bazen LLM'ler ```json ... ``` bloğu içinde verebiliyor)
+            match = re.search(r'\{.*\}', content, re.DOTALL)
+            if match:
+                data = json.loads(match.group(0))
+                return int(data.get("score", 0)), data.get("search_query", "").strip()
+    except Exception as e:
+        print(f"Router Hatası: {e}")
+    
+    return 0, ""
+
+
 # --- RAG: WEB SEARCH HELPER (Geliştirildi) ---
-def search_web(query):
+def search_web(search_query):
     """DuckDuckGo kullanarak internette arama yapar ve özet kaynak metni döner."""
     try:
-        search_query = query
-        if "[KULLANICI SORUSU]" in query:
-            search_query = query.split("[KULLANICI SORUSU]")[-1].strip()
-        
-        search_query = search_query.lower()
-        
-        # Arama motorlarının kafasını karıştıran Türkçe soru eklerini ve yazım hatalarını temizleyelim
-        if "gurub" in search_query:
-            search_query = search_query.replace("gurub", "grup")
-        
-        # Soru kalıplarını temizleyip yalın anahtar kelimeler bırakalım
-        for word in ["hangi ülkeler var", "hangileridir", "nelerdir", "soru", "nedir"]:
-            search_query = search_query.replace(word, "").strip()
-
-        search_query = search_query[:150].strip()
-        
         if not search_query:
             return ""
 
+        search_query = search_query[:150].strip()
+        
         # Türkçe anahtar kelimeler için Türkiye bölgesini, yoksa genel bölgeyi seç
-        search_region = "tr-tr" if any(x in search_query for x in ["dünya kupası", "grup", "takım", "maç"]) else "wt-wt"
+        search_region = "tr-tr" if any(x in search_query.lower() for x in ["dünya kupası", "grup", "takım", "maç", "nedir", "kimdir"]) else "wt-wt"
 
         with DDGS() as ddgs:
-            # max_results bağlamı genişletmek için 5'e çıkarıldı
             results = ddgs.text(search_query, max_results=5, region=search_region, safesearch="moderate")
             
-            # Eğer Türkçe aramadan sonuç çıkmazsa veya zayıf kalırsa evrensel küresel aramaya dön
             if not results and search_region == "tr-tr":
                 results = ddgs.text(search_query, max_results=5, region="wt-wt", safesearch="moderate")
                 
@@ -234,13 +264,22 @@ def ask():
     else:
         user_query = original_query
 
-    # --- RAG OPTİMİZASYONU ---
+    # --- YENİLENEN RAG OPTİMİZASYONU (ROUTER SİSTEMİ) ---
+    web_context = ""
     search_prompt = original_query if original_query else user_query
-    web_context = search_web(search_prompt)
     
-    # Özel Durum Güvencesi: Eğer 2026 dünya kupası grupları Türkçe aramayla bulunamazsa, İngilizce net veri çekip sepeti garantiye alalım
-    if "2026" in search_prompt and "dünya kupası" in search_prompt.lower() and not web_context:
-        web_context = search_web("2026 FIFA World Cup groups standings")
+    if search_prompt:
+        # Sorunun internet ihtiyacını puanla ve optimize sorguyu al
+        score, optimized_query = analyze_search_necessity(search_prompt)
+        print(f"[DABI ROUTER] Arama İhtiyacı Puanı: {score}/10 | Üretilen Sorgu: '{optimized_query}'")
+        
+        # Puan 5'ten büyükse internet araması tetiklenir
+        if score > 5 and optimized_query:
+            web_context = search_web(optimized_query)
+            
+            # Garanti mekanizması: Eğer 2026 dünya kupası aranıyor ama sonuç dönmediyse İngilizceye zorla
+            if "2026" in optimized_query and not web_context:
+                web_context = search_web("2026 FIFA World Cup standings groups")
 
     if is_patron:
         system_prompt = (
@@ -291,8 +330,6 @@ def ask():
     messages.append({"role": "user", "content": user_query})
 
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-    
-    # DÜZELTME: Modelin uydurma yapmasını engellemek ve RAG verisine sadık kalmasını sağlamak amacıyla temperature 0.4'e düşürüldü
     payload = {"model": MODEL_NAME, "messages": messages, "temperature": 0.4}
 
     try:
