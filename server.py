@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template, jsonify, session, redirect, url_for, send_from_directory, current_app, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
+from duckduckgo_search import DDGS
 import os
 import psycopg2
 import psycopg2.extras
