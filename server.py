@@ -26,6 +26,21 @@ app.secret_key = os.getenv("FLASK_SECRET", "dabi_core_secret_9921")
 # --- DOSYA BOYUTU SINIRINI GÜNCELLE ---
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
+# --- TARAYICI BOT VE GOBUSTER ENGELLEME MIDDLEWARE ---
+from flask import abort
+
+@app.before_request
+def block_scanners():
+    # Gelen isteğin User-Agent başlığını al ve küçük harfe çevir
+    user_agent = request.headers.get('User-Agent', '').lower()
+    
+    # Engellemek istediğimiz araçların imzaları
+    banned_tools = ["gobuster", "dirb", "nikto", "sqlmap", "nmap"]
+    
+    # İstek bu araçlardan birinden geliyorsa 404 (Böyle bir sayfa yok) döndürerek yanılt
+    if any(tool in user_agent for tool in banned_tools):
+        abort(404)
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL_NAME = "llama-3.3-70b-versatile"
