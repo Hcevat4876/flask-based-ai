@@ -16,7 +16,7 @@ body {
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
   font-family: 'Fira Code', monospace;
-  overflow: hidden; position: relative;
+  overflow-y: auto; position: relative; padding: 20px 0;
 }
 .grid-bg {
   position: fixed; inset: 0;
@@ -32,7 +32,7 @@ body {
   position: relative; z-index: 2;
   background: rgba(0,242,255,0.03);
   border: 1px solid rgba(0,242,255,0.2);
-  border-radius: 4px; padding: 50px 40px; width: 440px;
+  border-radius: 4px; padding: 40px; width: 440px;
   backdrop-filter: blur(20px);
   box-shadow: 0 0 60px rgba(0,242,255,0.08), inset 0 0 60px rgba(0,0,0,0.5);
 }
@@ -47,9 +47,9 @@ body {
   text-shadow: 0 0 20px var(--neon-blue), 0 0 60px rgba(0,242,255,0.3);
   margin-bottom: 6px;
 }
-.sub { text-align: center; color: rgba(0,242,255,0.35); font-size: 0.6rem; letter-spacing: 3px; margin-bottom: 40px; }
-label { display: block; color: rgba(0,242,255,0.5); font-size: 0.6rem; letter-spacing: 2px; margin-bottom: 6px; margin-top: 22px; }
-input {
+.sub { text-align: center; color: rgba(0,242,255,0.35); font-size: 0.6rem; letter-spacing: 3px; margin-bottom: 30px; }
+label { display: block; color: rgba(0,242,255,0.5); font-size: 0.6rem; letter-spacing: 2px; margin-bottom: 6px; margin-top: 18px; }
+input[type="text"], input[type="password"] {
   width: 100%; background: rgba(0,242,255,0.04); border: 1px solid rgba(0,242,255,0.15);
   border-radius: 2px; padding: 13px 16px; color: var(--neon-blue);
   font-family: 'Fira Code', monospace; font-size: 0.9rem; outline: none;
@@ -57,15 +57,24 @@ input {
 }
 input:focus { border-color: var(--neon-blue); box-shadow: 0 0 14px rgba(0,242,255,0.25); }
 input::placeholder { color: rgba(0,242,255,0.2); }
+
+.privacy-container {
+  display: flex; align-items: flex-start; gap: 10px; margin-top: 20px; font-size: 0.75rem; color: rgba(255,255,255,0.7);
+}
+.privacy-container input[type="checkbox"] {
+  margin-top: 2px; cursor: pointer; accent-color: var(--neon-blue); width: 16px; height: 16px;
+}
+.privacy-container a { color: var(--neon-blue); text-decoration: underline; }
+
 .btn {
-  width: 100%; margin-top: 30px; padding: 14px; background: transparent;
+  width: 100%; margin-top: 25px; padding: 14px; background: transparent;
   border: 1px solid var(--neon-blue); border-radius: 2px;
   color: var(--neon-blue); font-family: 'Orbitron', sans-serif;
   font-size: 0.75rem; font-weight: 700; letter-spacing: 4px;
   cursor: pointer; transition: all 0.3s; text-transform: uppercase;
 }
 .btn:hover { background: var(--neon-blue); color: var(--bg); box-shadow: 0 0 24px rgba(0,242,255,0.5); }
-.link-row { text-align: center; margin-top: 22px; color: rgba(0,242,255,0.3); font-size: 0.72rem; }
+.link-row { text-align: center; margin-top: 20px; color: rgba(0,242,255,0.3); font-size: 0.72rem; }
 .link-row a { color: var(--neon-pink); text-decoration: none; transition: text-shadow 0.3s; }
 .link-row a:hover { text-shadow: 0 0 10px var(--neon-pink); }
 .error {
@@ -88,6 +97,14 @@ input::placeholder { color: rgba(0,242,255,0.2); }
     <input type="text" name="username" placeholder="Kimlik girin..." autocomplete="username" required>
     <label>ACCESS KEY</label>
     <input type="password" name="password" placeholder="Şifre girin..." autocomplete="current-password" required>
+    
+    <div class="privacy-container">
+      <input type="checkbox" id="privacy_agreed" name="privacy_agreed" required>
+      <label for="privacy_agreed" style="display:inline; margin:0; font-size:0.75rem; color:rgba(255,255,255,0.8); letter-spacing:normal;">
+        <a href="/gizlilik.html" target="_blank">Gizlilik Politikası</a>'nı okudum ve kabul ediyorum.
+      </label>
+    </div>
+
     <button class="btn" type="submit">EXECUTE LOGIN</button>
   </form>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
@@ -95,13 +112,10 @@ input::placeholder { color: rgba(0,242,255,0.2); }
 </div>
 
 <script>
-    // Eğer kullanıcı login sayfasındaysa, geri tuşuna basınca index'e gitmesini engeller
     history.pushState(null, null, location.href);
     window.onpopstate = function () {
         history.go(1);
     };
 </script>
-
-
 </body>
 </html>
