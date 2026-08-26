@@ -108,15 +108,17 @@ def get_client_ip():
 
 
 # --- RAG: WEB ARAMA SİSTEMİ ---
+# --- RAG: WEB ARAMA SİSTEMİ ---
 SEARCH_TRIGGERS = [
     # Türkçe tetikleyiciler
     "2025", "2026", "2027", "güncel", "son dakika", "şu an", "şu anda",
     "bugün", "yarın", "dün", "haber", "haberler", "kim kazandı",
     "fiyat", "fiyatı", "kur", "dolar", "euro", "altın", "borsa",
-    "hava durumu", "skor", "maç sonucu", "sonuçları", "ne oldu",
+    "hava durumu", "skor", "maç sonucu", "sonuçları", "ne zaman",
+    "vizyon", "vizyonda", "tarihi", "tarihte", "çıktı", "girdi", "film", "sinema",
     # English triggers
     "latest", "current", "today", "now", "news", "who won",
-    "price", "weather", "score", "result", "happened", "update"
+    "price", "weather", "score", "result", "happened", "update", "when", "release"
 ]
 
 def needs_web_search(query: str) -> bool:
