@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DABI AI Sistem Mimarisi</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #0d0d18;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2rem;
+            color: #70a1ff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #2f3542;
+            padding-bottom: 20px;
+        }
+        .accordion {
+            background-color: #1e1e2f;
+            color: #ffffff;
+            cursor: pointer;
+            padding: 18px 24px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: 0.3s;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .accordion:hover {
+            background-color: #2b2b45;
+        }
+        .accordion.active {
+            background-color: #37375c;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            margin-bottom: 0;
+        }
+        .accordion::after {
+            content: '\002B';
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #70a1ff;
+            transition: transform 0.3s ease;
+        }
+        .accordion.active::after {
+            content: "\2212";
+            transform: rotate(180deg);
+        }
+        .panel {
+            padding: 0 24px;
+            background-color: #151522;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            margin-bottom: 15px;
+            color: #dcdde1;
+        }
+        .panel div {
+            padding: 20px 0;
+        }
+        .panel p {
+            margin-bottom: 12px;
+        }
+        .panel p:last-child {
+            margin-bottom: 0;
+        }
+        .panel strong {
+            color: #70a1ff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>DABI AI SİSTEM MİMARİSİ VE ÇALIŞMA PRENSİPLERİ VE GÜVENLİK POLİTİKASI</h1>
+
+    <button class="accordion">1. Giriş ve Operasyonel Amaç</button>
+    <div class="panel">
+        <div>
+            <p>Gelişen ve her geçen gün daha da karmaşıklaşan dijital ekosistemde, modern veri işleme hatları klasik ve hantal sunucu-istemci mimarilerinden tamamen sıyrılarak çok daha dinamik, modüler, esnek ve üst düzey güvenli yapılara evrilmiştir. Bu bağlamda büyük bir titizlikle tasarlanan bu kapsamlı altyapı, kullanıcı etkileşimlerini olabilecek en minimum gecikme süresiyle işleyen, uçtan uca güçlü şifreleme protokolleriyle donatılmış gelişmiş bir bilgi işleme platformu olarak kurgulanmıştır.</p>
+            <p>Sistem; kullanıcıların günlük iş akışlarını maksimum düzeyde hızlandırmak, son derece karmaşık veri setlerini saniyeler içinde analiz etmek ve anlık karar destek mekanizmalarına katma değer sunmak amacıyla geliştirilmiştir. Geleneksel yazılım kalıplarının sınırlarını aşarak estetik tasarımı ve güçlü fonksiyonelliği mükemmel bir uyumla harmanlayan bu yapı, arka planda yüksek performanslı veri tabanı yönetim sistemleriyle kesintisiz ve senkronize bir biçimde çalışmaktadır.</p>
+        </div>
+    </div>
+
+    <button class="accordion">2. Mimari Yapı ve Modüler Bileşenler</button>
+    <div class="panel">
+        <div>
+            <p>Altyapının temel iskeleti, gelecekteki olası büyümelere ve yük artışlarına karşı son derece dayanıklı, katmanlı ve ölçeklenebilir bir yazılım deseni üzerine inşa edilmiştir. İstemci tarafında tercih edilen en modern arayüz teknolojileri kullanıcı deneyimini her zaman en üst seviyede tutarken, sunucu tarafındaki esnek ve akıllı yönlendirme mekanizmaları sisteme gelen her türlü verinin güvenli ve hatasız bir şekilde işlenmesine zemin hazırlar.</p>
+            <p><strong>Veri Akış Güvenliği:</strong> Sisteme gelen tüm talepler çok katmanlı yetkilendirme süzgeçlerinden geçirilerek titizlikle doğrulanır ve şüpheli ya da yetkisiz her türlü erişim denemesi anlık olarak tespit edilip bloke edilir.</p>
+            <p><strong>Bellek ve Oturum Yönetimi:</strong> Kullanıcı oturumları, uluslararası güvenlik standartlarına tam uygun şekilde şifrelenmiş özel anahtarlar üzerinden yürütülür ve sistem kararlılığı arka planda sürekli olarak denetlenir.</p>
+            <p><strong>Çoklu Dosya Entegrasyonu:</strong> Düz metin tabanlı belgelerden gelişmiş elektronik tablo formatlarına, kaynak kod dosyalarından karmaşık belgelere kadar geniş bir yelpazede veri okuma, çözümleme ve işleme yeteneğine sahiptir.</p>
+        </div>
+    </div>
+
+    <button class="accordion">3. Dinamik Bilgi İşleme ve RAG Entegrasyonu</button>
+    <div class="panel">
+        <div>
+            <p>Platformun bilgi işleme kanadındaki en kritik yeteneklerinden biri, statik veri depolama sınırlarının ötesine geçerek güncel dış dünya bilgileriyle eşzamanlı ve akıllı bir etkileşim kurabilmesidir. Gelen sorguların anlamsal niteliğine göre arka planda tamamen otomatik olarak devreye giren akıllı tetikleyici mekanizmalar, gerekli görülen durumlarda harici arama katmanlarını ve RAG (Retrieval-Augmented Generation) protokollerini aktif hale getirir.</p>
+            <p>Bu sofistike süreç, sistemin dünyadaki güncel olayları, anlık piyasa verilerini ve dönemsel gelişmeleri kusursuz bir doğruluk payıyla takip edebilmesini ve kullanıcıya yansıtabilmesini sağlar. Elde edilen ham ve dağınık veriler, yapının gelişmiş içsel süzgecinden ve doğal dil işleme katmanlarından geçirilerek kullanıcıya en akıcı, net, şeffaf ve analitik formatla sunulur.</p>
+        </div>
+    </div>
+
+    <button class="accordion">4. Yönetim Paneli</button>
+    <div class="panel">
+        <div>
+            <p>Sistem genelindeki mesaj akışları ve kullanıcı etkileşimleri, yetkili yöneticiler tarafından özel bir panel üzerinden izlenebilmektedir.</p>
+        </div>
+    </div>
+
+    <button class="accordion">5. Güvenlik Protokolleri ve Ağ Savunması</button>
+    <div class="panel">
+        <div>
+            <p>Dijital varlıkların, kurumsal düzeydeki verilerin ve bireysel kullanıcı gizliliğinin titizlikle korunması, bu projenin hayata geçirildiği ilk günden beri sahip olduğu en temel ve vazgeçilmez öncelikler arasında yer almaktadır. Sisteme dışarıdan yöneltilebilecek olası zararlı taramalar, otomatik bot saldırıları ya da sızma girişimleri; ağ katmanının en ön saflarında konumlandırılmış özel süzgeçler ve gelişmiş güvenlik duvarları sayesinde, henüz istekler sunucu çekirdeğine ulaşmayı başaramadan tamamen engellenir.</p>
+            <p>Ek olarak, işlenen ve aktarılan tüm veriler hem transfer aşamasında hem de kalıcı depolama süreçlerinde endüstri standardı modern şifreleme algoritmalarıyla maksimum düzeyde güvence altına alınır. Kapsamlı gizlilik politikaları, şeffaf kullanıcı onay mekanizmaları ve katı erişim kısıtlamaları; platformun her koşulda güvenilir, yasal düzenlemelere tam uyumlu ve kararlı bir çizgide kalmasını garantiler.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight) {
+                panel.style.maxHeight = null;
+                panel.style.padding = "0 24px";
+            } else {
+                panel.style.padding = "10px 24px";
+                panel.style.maxHeight = panel.scrollHeight + "px";
+            } 
+        });
+    }
+</script>
+
+</body>
+</html>
