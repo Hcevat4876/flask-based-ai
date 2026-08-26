@@ -43,7 +43,7 @@ def block_scanners():
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL_NAME = "llama-3.3-70b-versatile"
+MODEL_NAME = "meta-llama/llama-4-scout-17b-16e-instruct"
 ADMIN_USER = "HscAdmin"
 ADMIN_PASS = "4876Hsc487634544800"
 
