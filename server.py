@@ -5,15 +5,14 @@ import os
 import psycopg2
 import psycopg2.extras
 import urllib3
-import html  # DÜZELTME: Kullanıcı girdilerindeki HTML'leri etkisizleştirmek için
+import html
 from dotenv import load_dotenv
 from datetime import datetime
 import logging
 import json
 import re
-from ddgs import DDGS  # --- RAG: web search kütüphanesi ---
+from ddgs import DDGS
 
-# Log seviyesini sadece hataları gösterecek şekilde ayarla
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
@@ -23,21 +22,14 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "dabi_core_secret_9921")
 
-# --- DOSYA BOYUTU SINIRINI GÜNCELLE ---
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
-# --- TARAYICI BOT VE GOBUSTER ENGELLEME MIDDLEWARE ---
 from flask import abort
 
 @app.before_request
 def block_scanners():
-    # Gelen isteğin User-Agent başlığını al ve küçük harfe çevir
     user_agent = request.headers.get('User-Agent', '').lower()
-    
-    # Engellemek istediğimiz araçların imzaları
     banned_tools = ["gobuster", "dirb", "nikto", "sqlmap", "nmap"]
-    
-    # İstek bu araçlardan birinden geliyorsa 404 (Böyle bir sayfa yok) döndürerek yanılt
     if any(tool in user_agent for tool in banned_tools):
         abort(404)
 
@@ -47,8 +39,6 @@ MODEL_NAME = "openai/gpt-oss-120b"
 ADMIN_USER = "HscAdmin"
 ADMIN_PASS = "4876Hsc487634544800"
 
-
-# --- DATABASE CONNECTION ---
 def get_db():
     return psycopg2.connect(os.environ["DATABASE_URL"], cursor_factory=psycopg2.extras.RealDictCursor)
 
@@ -62,7 +52,8 @@ def init_db():
                     is_admin BOOLEAN DEFAULT FALSE,
                     is_banned BOOLEAN DEFAULT FALSE,
                     last_ip TEXT DEFAULT '',
-                    admin_message TEXT DEFAULT ''
+                    admin_message TEXT DEFAULT '',
+                    privacy_accepted BOOLEAN DEFAULT FALSE
                 )
             """)
             cur.execute("""
@@ -84,6 +75,7 @@ def init_db():
                 ("is_banned", "BOOLEAN DEFAULT FALSE"),
                 ("last_ip", "TEXT DEFAULT ''"),
                 ("admin_message", "TEXT DEFAULT ''"),
+                ("privacy_accepted", "BOOLEAN DEFAULT FALSE"),
             ]:
                 cur.execute(f"""
                     DO $$ BEGIN
@@ -94,7 +86,7 @@ def init_db():
             cur.execute("SELECT username FROM users WHERE username = %s", (ADMIN_USER,))
             if not cur.fetchone():
                 cur.execute(
-                    "INSERT INTO users (username, password, is_admin) VALUES (%s, %s, TRUE)",
+                    "INSERT INTO users (username, password, is_admin, privacy_accepted) VALUES (%s, %s, TRUE, TRUE)",
                     (ADMIN_USER, generate_password_hash(ADMIN_PASS))
                 )
             conn.commit()
@@ -106,30 +98,23 @@ def get_client_ip():
         return request.headers["X-Forwarded-For"].split(",")[0].strip()
     return request.remote_addr or "unknown"
 
-
-# --- RAG: WEB ARAMA SİSTEMİ ---
-# --- RAG: WEB ARAMA SİSTEMİ ---
 SEARCH_TRIGGERS = [
-    # Türkçe tetikleyiciler
     "2025", "2026", "2027", "güncel", "son dakika", "şu an", "şu anda",
     "bugün", "yarın", "dün", "haber", "haberler", "kim kazandı",
     "fiyat", "fiyatı", "kur", "dolar", "euro", "altın", "borsa",
     "hava durumu", "skor", "maç sonucu", "sonuçları", "ne zaman",
     "vizyon", "vizyonda", "tarihi", "tarihte", "çıktı", "girdi", "film", "sinema",
-    # English triggers
     "latest", "current", "today", "now", "news", "who won",
     "price", "weather", "score", "result", "happened", "update", "when", "release"
 ]
 
 def needs_web_search(query: str) -> bool:
-    """Heuristic: sorgu güncel/internet bilgisi gerektiriyor mu?"""
     if not query:
         return False
     q = query.lower()
     return any(t in q for t in SEARCH_TRIGGERS)
 
 def detect_lang_region(query: str) -> str:
-    """Sorgudaki Türkçe karakter/kelimelere göre bölge belirler."""
     turkish_chars = set("çğıöşüÇĞİÖŞÜ")
     turkish_words = {"ne", "nasıl", "kim", "kaç", "nedir", "mi", "mı", "mu", "mü",
                       "ve", "ile", "için", "bugün", "güncel", "haber", "fiyat", "kur"}
@@ -139,12 +124,10 @@ def detect_lang_region(query: str) -> str:
     return "wt-wt"
 
 def web_search(query: str, max_results: int = 5) -> str:
-    """DuckDuckGo üzerinden arama yapar ve sonuçları formatlar."""
     region = detect_lang_region(query)
     try:
         results = DDGS().text(query, region=region, max_results=max_results)
         if not results and region != "wt-wt":
-            # Bölgeye özgü sonuç yoksa global aramaya geri dön
             results = DDGS().text(query, region="wt-wt", max_results=max_results)
         if not results:
             return ""
@@ -158,8 +141,6 @@ def web_search(query: str, max_results: int = 5) -> str:
     except Exception as e:
         return f"[Arama hatası: {e}]"
 
-
-# --- ROUTES ---
 @app.route('/')
 def index():
     if 'username' not in session:
@@ -171,6 +152,11 @@ def login():
     if request.method == 'POST':
         u = request.form.get('username', '').strip()
         p = request.form.get('password', '').strip()
+        privacy_agreed = request.form.get('privacy_agreed')
+        
+        if not privacy_agreed:
+            return render_template('login.html', error="ERR_400: Devam etmek için Gizlilik Politikası'nı kabul etmelisiniz.")
+            
         ip = get_client_ip()
         
         with get_db() as conn:
@@ -184,8 +170,10 @@ def login():
                     return render_template('login.html', error="ERR_401: Kimlik doğrulaması başarısız.")
                 if user['is_banned']:
                     return render_template('login.html', error="ERR_403: Bu hesap sistem tarafından askıya alındı.")
-                cur.execute("UPDATE users SET last_ip = %s WHERE username = %s", (ip, u))
+                
+                cur.execute("UPDATE users SET last_ip = %s, privacy_accepted = TRUE WHERE username = %s", (ip, u))
                 conn.commit()
+                
         session['username'] = u
         session['is_admin'] = user['is_admin']
         return redirect(url_for('index'))
@@ -204,7 +192,7 @@ def register():
                 if cur.fetchone():
                     return render_template('register.html', error="ERR_409: Bu kullanıcı adı zaten mevcut.")
                 cur.execute(
-                    "INSERT INTO users (username, password, is_admin) VALUES (%s, %s, FALSE)",
+                    "INSERT INTO users (username, password, is_admin, privacy_accepted) VALUES (%s, %s, FALSE, FALSE)",
                     (u, generate_password_hash(p))
                 )
                 conn.commit()
@@ -216,6 +204,30 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route('/privacy_status')
+def privacy_status():
+    if 'username' not in session:
+        return jsonify({"accepted": False})
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT privacy_accepted FROM users WHERE username = %s", (session['username'],))
+            user = cur.fetchone()
+            accepted = user['privacy_accepted'] if user else False
+            return jsonify({"accepted": accepted})
+
+@app.route('/accept_privacy', methods=['POST'])
+def accept_privacy():
+    if 'username' not in session:
+        return jsonify({"success": False})
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET privacy_accepted = TRUE WHERE username = %s", (session['username'],))
+            conn.commit()
+    return jsonify({"success": True})
+
+@app.route('/gizlilik.html')
+def gizlilik_page():
+    return render_template('gizlilik.html')
 
 @app.route('/get_history')
 def get_history():
@@ -228,7 +240,6 @@ def get_history():
                 (session['username'],)
             )
             rows = cur.fetchall()
-            
     return jsonify([{"user": html.escape(r["user_message"]), "ai": r["ai_message"]} for r in rows])
 
 @app.route('/reset', methods=['POST'])
@@ -250,7 +261,7 @@ def ask():
 
     original_query = request.json.get('prompt', '').strip()
     file_content = request.json.get('file_content', '').strip()
-    force_search = request.json.get('force_search', False)  # frontend'den manuel tetikleme
+    force_search = request.json.get('force_search', False)
     username = session['username']
     is_patron = (username == ADMIN_USER)
 
@@ -259,7 +270,6 @@ def ask():
     else:
         user_query = original_query
 
-    # --- RAG: web arama enjeksiyonu ---
     search_context = ""
     used_search = False
     if original_query and (force_search or needs_web_search(original_query)):
@@ -328,7 +338,6 @@ def ask():
         resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60, verify=False)
         if resp.status_code == 200:
             ai_res = resp.json()['choices'][0]['message']['content'].strip()
-            # DB'ye kaydederken arama sonuçlarını DEĞİL, orijinal soruyu kaydet
             safe_user_query = html.escape(user_query)
 
             with get_db() as conn:
@@ -346,7 +355,6 @@ def ask():
     except Exception as e:
         return jsonify({"response": "DABI: Bağlantı zaman aşımına uğradı."})
 
-# --- FILE UPLOAD ---
 @app.route('/upload_file', methods=['POST'])
 def upload_file():
     if 'username' not in session:
@@ -401,7 +409,6 @@ def upload_file():
 
     return jsonify({"success": True, "content": content[:120000], "filename": f.filename})
 
-# --- ADMIN PANEL ---
 @app.route('/admin')
 def admin():
     if not session.get('is_admin'):
