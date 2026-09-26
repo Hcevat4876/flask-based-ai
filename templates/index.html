@@ -94,15 +94,6 @@ body {
 .online-dot { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 10px; color: #10b981; font-weight: 500; }
 .dot-green { width: 6px; height: 6px; background: #10b981; border-radius: 50%; box-shadow: 0 0 0 2px rgba(16,185,129,0.2); }
 
-.monitor-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; }
-.monitor-item { margin-bottom: 12px; }
-.monitor-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; font-weight: 500; }
-.monitor-val { color: var(--text-main); font-weight: 600; }
-.prog-bg { height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }
-.prog-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
-.prog-blue { background: var(--primary); }
-.prog-pink { background: var(--accent); }
-
 .sidebar-nav { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
 .nav-item {
     display: flex; align-items: center; gap: 12px;
@@ -303,15 +294,6 @@ code { font-family: 'JetBrains Mono', monospace !important; font-size: 12px !imp
             <div class="online-dot"><span class="dot-green"></span>Online</div>
         </div>
     </div>
-    <div class="monitor-title">System Monitor</div>
-    <div class="monitor-item">
-        <div class="monitor-label"><span>CPU</span><span id="cpu-val">42%</span></div>
-        <div class="prog-bg"><div class="prog-fill prog-blue" id="cpu-bar" style="width:42%"></div></div>
-    </div>
-    <div class="monitor-item">
-        <div class="monitor-label"><span>MEM</span><span id="mem-val">71%</span></div>
-        <div class="prog-bg"><div class="prog-fill prog-pink" id="mem-bar" style="width:71%"></div></div>
-    </div>
     <nav class="sidebar-nav">
         <a href="#" class="nav-item" onclick="wipeMemory()"><i class="fas fa-trash"></i> Mesajları Sil</a>
         <a href="#" class="nav-item" onclick="const e='info@dabi.com.tr'; const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); if(isIOS){window.location.href='googlegmail:///co?to='+e; setTimeout(()=>{window.location.href='mailto:'+e},2000)}else if(!/Android|Mobi/i.test(navigator.userAgent)){window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+e,'_blank')}else{window.location.href='mailto:'+e} navigator.clipboard.writeText(e); this.querySelector('span').innerText='Kopyalandı!'; setTimeout(()=>this.querySelector('span').innerText=e,2000); return false;"><i class="fas fa-envelope"></i> <span>info@dabi.com.tr</span></a>
@@ -437,14 +419,6 @@ async function statusLoop() {
 }
 
 setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('tr-TR'); }, 1000);
-setInterval(() => {
-    const cpu = Math.floor(Math.random() * 30 + 20);
-    const mem = Math.floor(Math.random() * 15 + 60);
-    document.getElementById('cpu-bar').style.width = cpu + '%';
-    document.getElementById('cpu-val').textContent = cpu + '%';
-    document.getElementById('mem-bar').style.width = mem + '%';
-    document.getElementById('mem-val').textContent = mem + '%';
-}, 5000);
 
 function showChat() {
     welcomeState.style.display = 'none';
@@ -627,7 +601,7 @@ async function wipeMemory() {
 inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
 async function handleFile(el) {
-    const file = el.files[0]; if (!file) return;
+    const file = el.files[data = 0]; if (!file) return; // (korundu)
     const fd = new FormData(); fd.append('file', file);
     const res = await fetch('/upload_file', {method: 'POST', body: fd});
     const data = await res.json();
