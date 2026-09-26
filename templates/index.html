@@ -11,243 +11,261 @@
 
     <link rel="icon" type="image/png" href="https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1">
     <link rel="apple-touch-icon" href="https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://i.ibb.co/JRTv3hyN/MG-3121.png?v=4.1">
 
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Markdown Parser ve Kod Renklendirici -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/tokyo-night-dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/stackoverflow-light.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
 
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-    --neon-blue: #00f2ff;
-    --neon-pink: #ff00c1;
-    --bg: #0a0a12;
-    --sidebar-bg: #0d0d18;
-    --border: rgba(255,255,255,0.07);
-}
-::-webkit-scrollbar { width: 3px; }
-::-webkit-scrollbar-thumb { background: rgba(0,242,255,0.3); border-radius: 2px; }
-body {
-    background: var(--bg); color: #ccc;
-    font-family: 'Fira Code', monospace;
-    height: 100vh; 
-    height: 100dvh; 
-    display: flex; 
-    overflow: hidden;
+    --primary: #2563eb;
+    --primary-light: #eff6ff;
+    --accent: #3b82f6;
+    --bg-main: #f8fafc;
+    --bg-sidebar: #ffffff;
+    --bg-panel: #ffffff;
+    --border-color: #e2e8f0;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(37, 99, 235, 0.1), 0 4px 6px -4px rgba(37, 99, 235, 0.1);
 }
 
-/* SIDEBAR */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+body {
+    background: var(--bg-main); color: var(--text-main);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    height: 100vh; height: 100dvh;
+    display: flex; overflow: hidden;
+}
+
+/* SIDEBAR STİLİ */
 .sidebar {
-    width: 240px; min-width: 240px;
-    background: var(--sidebar-bg);
-    border-right: 1px solid var(--border);
+    width: 260px; min-width: 260px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
     display: flex; flex-direction: column;
-    padding: 20px 14px;
-    transition: transform 0.3s ease;
+    padding: 24px 16px;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 100;
 }
 
 .logo-mark {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 12px;
     margin-bottom: 24px; padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-color);
 }
 .logo-icon {
-    width: 34px; height: 34px; border-radius: 8px;
-    background: linear-gradient(135deg, rgba(0,242,255,0.2), rgba(255,0,193,0.2));
-    border: 1px solid rgba(0,242,255,0.3);
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
     display: flex; align-items: center; justify-content: center;
-    color: var(--neon-blue); font-size: 14px;
+    color: #fff; font-size: 16px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    transition: transform 0.3s;
 }
-.logo-text { font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 700; color: var(--neon-blue); letter-spacing: 3px; }
-.logo-sub { font-size: 8px; color: rgba(255,255,255,0.2); letter-spacing: 1px; }
+.logo-icon:hover { transform: scale(1.05) rotate(5deg); }
+.logo-text { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
+.logo-sub { font-size: 10px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.5px; }
 
 .user-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border);
-    border-radius: 8px; padding: 14px;
+    background: #f1f5f9;
+    border: 1px solid var(--border-color);
+    border-radius: 14px; padding: 14px;
     margin-bottom: 24px;
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 12px;
 }
 .user-avatar {
-    width: 36px; height: 36px; border-radius: 50%;
-    background: linear-gradient(135deg, rgba(0,242,255,0.3), rgba(188,0,255,0.3));
-    border: 1px solid rgba(0,242,255,0.3);
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--primary-light); color: var(--primary);
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; color: var(--neon-blue); flex-shrink: 0;
+    font-size: 14px; font-weight: 600; flex-shrink: 0;
 }
-.user-name { font-size: 13px; color: #eee; font-weight: 500; }
-.user-rank { font-size: 9px; color: rgba(0,242,255,0.5); letter-spacing: 1px; }
-.online-dot { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 9px; color: #00ff88; }
-.dot-green { width: 6px; height: 6px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 5px #00ff88; }
+.user-name { font-size: 13px; color: var(--text-main); font-weight: 600; }
+.user-rank { font-size: 10px; color: var(--primary); font-weight: 500; }
+.online-dot { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 10px; color: #10b981; font-weight: 500; }
+.dot-green { width: 6px; height: 6px; background: #10b981; border-radius: 50%; box-shadow: 0 0 0 2px rgba(16,185,129,0.2); }
 
-.monitor-title { font-size: 9px; letter-spacing: 2px; color: rgba(255,255,255,0.2); margin-bottom: 12px; text-transform: uppercase; }
-.monitor-item { margin-bottom: 14px; }
-.monitor-label { display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
-.monitor-val { color: rgba(255,255,255,0.7); }
-.prog-bg { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
-.prog-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
-.prog-blue { background: var(--neon-blue); box-shadow: 0 0 6px var(--neon-blue); }
-.prog-pink { background: var(--neon-pink); box-shadow: 0 0 6px var(--neon-pink); }
+.monitor-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px; text-transform: uppercase; }
+.monitor-item { margin-bottom: 12px; }
+.monitor-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; font-weight: 500; }
+.monitor-val { color: var(--text-main); font-weight: 600; }
+.prog-bg { height: 6px; background: #f1f5f9; border-radius: 3px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+.prog-blue { background: var(--primary); }
+.prog-pink { background: var(--accent); }
 
-.sidebar-nav { margin-top: auto; display: flex; flex-direction: column; gap: 2px; }
+.sidebar-nav { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
 .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: 6px;
-    font-size: 11px; color: rgba(255,255,255,0.35);
-    cursor: pointer; transition: all 0.2s; text-decoration: none;
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; border-radius: 10px;
+    font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; transition: all 0.2s ease; text-decoration: none;
     border: 1px solid transparent;
 }
-.nav-item i { width: 14px; text-align: center; }
-.nav-item:hover { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.7); border-color: var(--border); }
-.nav-item.download-apk { color: var(--neon-blue); background: rgba(0,242,255,0.03); border-color: rgba(0,242,255,0.1); }
-.nav-item.download-apk:hover { color: #fff; background: rgba(0,242,255,0.1); border-color: var(--neon-blue); box-shadow: 0 0 8px rgba(0,242,255,0.2); }
-.nav-item.danger:hover { color: #ff4444; background: rgba(255,68,68,0.06); border-color: rgba(255,68,68,0.15); }
+.nav-item i { width: 16px; text-align: center; transition: transform 0.2s; }
+.nav-item:hover { background: #f8fafc; color: var(--text-main); border-color: var(--border-color); transform: translateX(4px); }
+.nav-item:hover i { transform: scale(1.15); color: var(--primary); }
+.nav-item.download-apk { color: var(--primary); background: var(--primary-light); border-color: rgba(37,99,235,0.2); font-weight: 600; }
+.nav-item.download-apk:hover { background: var(--primary); color: #fff; box-shadow: var(--shadow-md); }
+.nav-item.danger:hover { color: #ef4444; background: #fee2e2; border-color: #fecaca; }
 
-/* MAIN */
-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; width: 100%; }
+/* ANA İÇERİK ALANI */
+main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; width: 100%; background: var(--bg-main); }
 
 .topbar {
-    height: 48px; min-height: 48px;
-    border-bottom: 1px solid var(--border);
+    height: 60px; min-height: 60px;
+    border-bottom: 1px solid var(--border-color);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 20px; background: rgba(10,10,18,0.8);
+    padding: 0 28px; background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
 }
-.mobile-toggle { display: none; background: none; border: none; color: var(--neon-blue); font-size: 18px; cursor: pointer; }
+.mobile-toggle { display: none; background: none; border: none; color: var(--text-main); font-size: 20px; cursor: pointer; }
 
-.status-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,0.35); }
-.status-dot-sm { width: 6px; height: 6px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 5px #00ff88; animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.5);opacity:0.5;} }
-.topbar-clock { font-size: 10px; color: rgba(255,255,255,0.2); }
+.status-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.status-dot-sm { width: 7px; height: 7px; background: #10b981; border-radius: 50%; box-shadow: 0 0 0 3px rgba(16,185,129,0.15); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1);}50%{transform:scale(1.3);opacity:0.7;} }
+.topbar-clock { font-size: 12px; font-weight: 600; color: var(--text-muted); background: #f1f5f9; padding: 4px 10px; border-radius: 6px; }
 
-/* CHAT AREA & MESSAGES */
-#chat-container { flex: 1; overflow-y: auto; padding: 0 20px; display: flex; flex-direction: column; }
-.welcome-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 40px 0; }
+/* SOHBET ALANI */
+#chat-container { flex: 1; overflow-y: auto; padding: 0 28px; display: flex; flex-direction: column; scroll-behavior: smooth; }
+.welcome-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 40px 0; animation: fadeIn 0.5s ease; }
+
+/* ORTADAKİ BÜYÜK LOGO DÜZELTİLDİ */
 .welcome-icon {
-    width: 56px; height: 56px; border-radius: 14px;
-    background: linear-gradient(135deg, rgba(0,242,255,0.15), rgba(188,0,255,0.15));
-    border: 1px solid rgba(0,242,255,0.25);
+    width: 80px; height: 80px; border-radius: 22px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px; color: var(--neon-blue); box-shadow: 0 0 20px rgba(0,242,255,0.1);
+    font-size: 32px; color: #fff; box-shadow: 0 12px 24px rgba(37, 99, 235, 0.3);
+    animation: floatIcon 4s ease-in-out infinite;
 }
-.welcome-title { font-family: 'Orbitron', sans-serif; font-size: 20px; letter-spacing: 6px; color: var(--neon-blue); text-shadow: 0 0 15px rgba(0,242,255,0.3); }
-.welcome-sub { font-size: 12px; color: rgba(255,255,255,0.3); text-align: center; line-height: 1.7; max-width: 360px; }
+@keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 
-.chat-msgs { display: flex; flex-direction: column; gap: 20px; padding: 28px 0; }
+.welcome-title { font-size: 24px; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
+.welcome-sub { font-size: 13px; color: var(--text-muted); text-align: center; line-height: 1.6; max-width: 380px; font-weight: 500; }
+
+.chat-msgs { display: flex; flex-direction: column; gap: 24px; padding: 32px 0; }
 
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(12px); }
+    from { opacity: 0; transform: translateY(14px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-.msg-wrap { 
-    display: flex; flex-direction: column; max-width: 90%; 
-    animation: fadeInUp 0.4s ease-out forwards; 
-}
+.msg-wrap { display: flex; flex-direction: column; max-width: 82%; animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .msg-wrap.user { align-self: flex-end; }
 .msg-wrap.ai { align-self: flex-start; width: 85%; }
-.msg-meta { font-size: 9px; letter-spacing: 2px; color: rgba(255,255,255,0.2); margin-bottom: 5px; text-transform: uppercase; }
+.msg-meta { font-size: 10px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.5px; }
 .msg-wrap.user .msg-meta { text-align: right; }
 
-.msg { padding: 12px 16px; border-radius: 10px; font-size: 13px; line-height: 1.6; word-break: break-word; position: relative; }
+.msg { padding: 16px 20px; border-radius: 16px; font-size: 13.5px; line-height: 1.7; word-break: break-word; box-shadow: var(--shadow-sm); }
 .msg.user {
-    background: rgba(0,242,255,0.07); border: 1px solid rgba(0,242,255,0.2);
-    color: #e8f8ff; border-radius: 10px 10px 2px 10px; white-space: pre-wrap;
+    background: var(--primary); color: #fff;
+    border-radius: 18px 18px 4px 18px; white-space: pre-wrap;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
 }
 .msg.ai {
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-    color: #ddd; border-radius: 10px 10px 10px 2px;
+    background: #ffffff; border: 1px solid var(--border-color);
+    color: var(--text-main); border-radius: 18px 18px 18px 4px;
 }
 
-/* INPUT */
-.input-area { padding: 16px 20px 24px; flex-shrink: 0; }
+/* ALT GİRİŞ ÇUBUĞU */
+.input-area { padding: 16px 28px 24px; flex-shrink: 0; background: linear-gradient(to top, var(--bg-main) 80%, rgba(248,250,252,0)); }
 .input-box {
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px; display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    background: #ffffff; border: 1px solid var(--border-color);
+    border-radius: 16px; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 16px;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s;
+}
+.input-box:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 #userInput {
     flex: 1; background: transparent; border: none; outline: none;
-    color: #eee; font-family: 'Fira Code', monospace; font-size: 13px; padding: 6px 4px;
+    color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; padding: 8px 0;
 }
+#userInput::placeholder { color: #94a3b8; }
 #sendBtn {
-    width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-    background: var(--neon-blue); border: none; border-radius: 8px; color: #000;
-    font-size: 14px; cursor: pointer; transition: all 0.25s;
+    width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+    background: var(--primary); border: none; border-radius: 12px; color: #fff;
+    font-size: 14px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
+#sendBtn:hover { transform: scale(1.05); background: #1d4ed8; }
+#sendBtn:active { transform: scale(0.95); }
 
-/* MOBILE MEDIA QUERIES */
+/* MOBİL UYUMLULUK */
 @media (max-width: 768px) {
     .sidebar {
-        position: fixed;
-        left: 0; top: 0; bottom: 0;
+        position: fixed; left: 0; top: 0; bottom: 0;
         transform: translateX(-100%);
+        box-shadow: 20px 0 50px rgba(0,0,0,0.1);
     }
     .sidebar.active { transform: translateX(0); }
-    .mobile-toggle { display: block; margin-right: 15px; }
+    .mobile-toggle { display: block; margin-right: 12px; }
     .topbar-clock { display: none; }
-    .msg-wrap { max-width: 95%; }
-    .msg-wrap.ai { width: 95%; }
+    .msg-wrap { max-width: 94%; }
+    .msg-wrap.ai { width: 94%; }
     
     .sidebar-overlay {
         display: none; position: fixed; inset: 0;
-        background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-        z-index: 90;
+        background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);
+        z-index: 90; animation: fadeIn 0.3s ease;
     }
     .sidebar-overlay.active { display: block; }
 }
 
-.typing::after { content: '_'; display: inline-block; color: var(--neon-blue); animation: blink 0.7s infinite; margin-left: 3px; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.typing::after { content: '_'; display: inline-block; color: var(--primary); animation: blink 0.7s infinite; margin-left: 3px; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-pre { padding: 14px; overflow-x: auto; margin: 0; }
-code { font-family: 'Fira Code', monospace !important; font-size: 12px !important; }
+pre { padding: 14px; overflow-x: auto; margin: 0; border-radius: 8px; }
+code { font-family: 'JetBrains Mono', monospace !important; font-size: 12px !important; }
 
-#admin-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; }
-#admin-overlay.show { display: flex; }
-.admin-box { background: rgba(8,8,20,0.98); border: 1px solid var(--neon-pink); border-radius: 10px; padding: 40px; text-align: center; color: #fff; }
-#fileInput { display: none; }
-
-/* GİZLİLİK POLİTİKASI MODAL STİLİ */
-#privacy-modal {
-    display: none; position: fixed; inset: 0; z-index: 9999;
-    background: rgba(5,5,16,0.92); backdrop-filter: blur(10px);
+/* MODALLAR */
+#admin-overlay, #privacy-modal {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(6px);
     align-items: center; justify-content: center; padding: 20px;
+    animation: fadeIn 0.3s ease;
 }
-#privacy-modal.show { display: flex; }
-.privacy-box {
-    background: rgba(13,13,24,0.98); border: 1px solid var(--neon-blue);
-    border-radius: 8px; padding: 35px; width: 100%; max-width: 500px;
-    box-shadow: 0 0 50px rgba(0,242,255,0.2); text-align: center;
+#admin-overlay.show, #privacy-modal.show { display: flex; }
+.admin-box, .privacy-box {
+    background: #ffffff; border: 1px solid var(--border-color);
+    border-radius: 20px; padding: 36px; text-align: center; color: var(--text-main);
+    box-shadow: var(--shadow-lg); max-width: 440px; width: 100%;
 }
-.privacy-title {
-    font-family: 'Orbitron', sans-serif; font-size: 16px; color: var(--neon-blue);
-    letter-spacing: 2px; margin-bottom: 15px;
+.privacy-title, .admin-box-title {
+    font-size: 16px; font-weight: 700; color: var(--primary);
+    margin-bottom: 14px; letter-spacing: -0.5px;
 }
-.privacy-text {
-    font-size: 12px; color: #aaa; line-height: 1.6; margin-bottom: 25px; text-align: left;
-}
-.privacy-text a { color: var(--neon-blue); text-decoration: underline; }
-.privacy-check-row {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 25px; text-align: left; font-size: 12px; color: #ddd;
-}
-.privacy-check-row input { accent-color: var(--neon-blue); width: 18px; height: 18px; cursor: pointer; }
+.privacy-text { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; text-align: left; font-weight: 500; }
+.privacy-text a { color: var(--primary); text-decoration: underline; }
+.privacy-check-row { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; text-align: left; font-size: 12.5px; color: var(--text-main); font-weight: 500; }
+.privacy-check-row input { accent-color: var(--primary); width: 18px; height: 18px; cursor: pointer; }
 .privacy-btn {
-    width: 100%; padding: 12px; background: transparent; border: 1px solid var(--neon-blue);
-    color: var(--neon-blue); font-family: 'Orbitron', sans-serif; font-size: 11px;
-    letter-spacing: 2px; cursor: pointer; border-radius: 4px; transition: 0.3s;
+    width: 100%; padding: 12px; background: var(--primary); border: none;
+    color: #fff; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px;
+    font-weight: 700; letter-spacing: 0.5px; cursor: pointer; border-radius: 12px; transition: 0.2s;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
-.privacy-btn:hover:not(:disabled) { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px rgba(0,242,255,0.4); }
-.privacy-btn:disabled { opacity: 0.4; cursor: not-allowed; border-color: #444; color: #777; }
+.privacy-btn:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.privacy-btn:disabled { opacity: 0.4; cursor: not-allowed; background: #e2e8f0; color: #94a3b8; box-shadow: none; }
+#fileInput { display: none; }
 </style>
 </head>
 <body>
 
-<!-- MEVCUT/AÇIK OTURUMLAR İÇİN GİZLİLİK POLİTİKASI ONAY MODALI -->
+<!-- GİZLİLİK POLİTİKASI ONAY MODALI -->
 <div id="privacy-modal">
     <div class="privacy-box">
         <div class="privacy-title"><i class="fas fa-shield-alt"></i> GİZLİLİK POLİTİKASI GÜNCELLEMESİ</div>
@@ -264,9 +282,9 @@ code { font-family: 'Fira Code', monospace !important; font-size: 12px !importan
 
 <div id="admin-overlay">
     <div class="admin-box">
-        <div class="admin-box-title" style="color:var(--neon-pink); letter-spacing:2px; margin-bottom:15px; font-weight: bold;">⚠ SİSTEM MESAJI</div>
-        <div id="admin-box-msg" style="margin-bottom:20px; font-size: 14px; line-height: 1.5;"></div>
-        <button onclick="document.getElementById('admin-overlay').classList.remove('show')" style="padding:8px 20px; background:transparent; border:1px solid var(--neon-pink); color:var(--neon-pink); cursor:pointer; font-family: 'Orbitron'; font-size: 11px;">TAMAM</button>
+        <div class="admin-box-title" style="color:var(--primary);">⚠ SİSTEM MESAJI</div>
+        <div id="admin-box-msg" style="margin-bottom:24px; font-size: 13px; line-height: 1.6; color: var(--text-muted); font-weight: 500;"></div>
+        <button onclick="document.getElementById('admin-overlay').classList.remove('show')" style="padding:10px 24px; background:var(--primary); border:none; color:#fff; cursor:pointer; font-weight: 600; font-size: 12px; border-radius: 10px; transition: 0.2s;">TAMAM</button>
     </div>
 </div>
 
@@ -275,7 +293,7 @@ code { font-family: 'Fira Code', monospace !important; font-size: 12px !importan
 <aside class="sidebar" id="sidebar">
     <div class="logo-mark">
         <div class="logo-icon"><i class="fas fa-brain"></i></div>
-        <div><div class="logo-text">DABI</div><div class="logo-sub">Yarap Zeka</div></div>
+        <div><div class="logo-text">DABI</div><div class="logo-sub">Yapay Zeka Asistanı</div></div>
     </div>
     <div class="user-card">
         <div class="user-avatar"><i class="fas fa-user"></i></div>
@@ -311,10 +329,11 @@ code { font-family: 'Fira Code', monospace !important; font-size: 12px !importan
         <div class="topbar-clock" id="clock">00:00:00</div>
     </div>
     <div id="chat-container">
+        <!-- ORTADAKİ BÜYÜK LOGO VE KARŞILAMA ALANI -->
         <div class="welcome-state" id="welcome-state">
             <div class="welcome-icon"><i class="fas fa-brain"></i></div>
-            <div class="welcome-title">DABI</div>
-            <div class="welcome-sub">AI Ready. Ask Anything </div>
+            <div class="welcome-title">DABI AI'ye Hoş Geldiniz</div>
+            <div class="welcome-sub">Nasıl yardımcı olabilirim? İstediğiniz görevi komuta edin.</div>
         </div>
         <div class="chat-msgs" id="chat-msgs" style="display:none;"></div>
     </div>
@@ -322,9 +341,9 @@ code { font-family: 'Fira Code', monospace !important; font-size: 12px !importan
         <div id="file-preview"></div>
         <input type="file" id="fileInput" accept=".txt,.py,.pdf" onchange="handleFile(this)">
         <div class="input-box">
-            <button style="background:none; border:none; color:#555; cursor:pointer; padding:0 10px;" onclick="document.getElementById('fileInput').click()"><i class="fas fa-paperclip"></i></button>
-            <input type="text" id="userInput" placeholder="Command DABI..." autocomplete="off" autofocus>
-            <button id="sendBtn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; padding:0 6px; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'" onclick="document.getElementById('fileInput').click()"><i class="fas fa-paperclip" style="font-size: 15px;"></i></button>
+            <input type="text" id="userInput" placeholder="Bir şeyler sorun veya komut verin..." autocomplete="off" autofocus>
+            <button id="sendBtn" onclick="sendMessage()"><i class="fas fa-arrow-up"></i></button>
         </div>
     </div>
 </main>
@@ -459,17 +478,17 @@ function renderContent(text) {
         const escapedCode = escapeHTML(block.code.trim());
         
         const codeContainerHTML = `
-            <div class="code-container" style="margin: 15px 0; background: #15161e; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; text-align: left;">
-                <div class="code-header" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: rgba(255,255,255,0.03); font-size: 11px; color: var(--neon-blue); border-bottom: 1px solid var(--border);">
-                    <span style="font-family: 'Orbitron', sans-serif; letter-spacing: 1px;"><i class="fas fa-code"></i> ${block.lang.toUpperCase()}</span>
-                    <div class="code-actions" style="display: flex; gap: 15px;">
-                        <span class="code-btn" onclick="copyCode(this)" style="cursor: pointer; color: rgba(255,255,255,0.4); transition: 0.2s; display: flex; align-items: center; gap: 5px;"><i class="fas fa-copy"></i> Kopyala</span>
-                        ${isHTML ? `<span class="code-btn" onclick="togglePreview(this)" style="cursor: pointer; color: rgba(255,255,255,0.4); transition: 0.2s; display: flex; align-items: center; gap: 5px;"><i class="fas fa-eye"></i> Önizleme</span>` : ''}
+            <div class="code-container" style="margin: 16px 0; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <div class="code-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #f1f5f9; font-size: 11px; color: var(--primary); border-bottom: 1px solid var(--border-color); font-weight: 600;">
+                    <span><i class="fas fa-code"></i> ${block.lang.toUpperCase()}</span>
+                    <div class="code-actions" style="display: flex; gap: 14px;">
+                        <span class="code-btn" onclick="copyCode(this)" style="cursor: pointer; color: var(--text-muted); transition: 0.2s; display: flex; align-items: center; gap: 4px;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'"><i class="fas fa-copy"></i> Kopyala</span>
+                        ${isHTML ? `<span class="code-btn" onclick="togglePreview(this)" style="cursor: pointer; color: var(--text-muted); transition: 0.2s; display: flex; align-items: center; gap: 4px;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-muted)'"><i class="fas fa-eye"></i> Önizleme</span>` : ''}
                     </div>
                 </div>
-                <pre style="padding: 14px; overflow-x: auto; margin: 0; background: #1a1b26;"><code class="language-${block.lang === 'js' ? 'javascript' : block.lang}">${escapedCode}</code></pre>
+                <pre style="padding: 14px; overflow-x: auto; margin: 0; background: #ffffff;"><code class="language-${block.lang === 'js' ? 'javascript' : block.lang}">${escapedCode}</code></pre>
                 <div class="raw-code-holder" style="display:none;">${escapedCode}</div>
-                <iframe class="preview-box" sandbox="allow-scripts" style="background: white; width: 100%; height: 350px; border: none; border-top: 1px solid var(--border); display: none;"></iframe>
+                <iframe class="preview-box" sandbox="allow-scripts" style="background: white; width: 100%; height: 350px; border: none; border-top: 1px solid var(--border-color); display: none;"></iframe>
             </div>
         `;
         
@@ -505,7 +524,7 @@ async function appendMsg(sender, text, typeEffect = true) {
     if (!hasMessages) showChat();
     const wrap = document.createElement('div');
     wrap.className = `msg-wrap ${sender}`;
-    const meta = sender === 'user' ? 'YOU' : 'DABI';
+    const meta = sender === 'user' ? 'YOU' : 'DABI AI';
     wrap.innerHTML = `<div class="msg-meta">${meta}</div><div class="msg ${sender}"></div>`;
     chatMsgs.appendChild(wrap);
     const msgEl = wrap.querySelector('.msg');
@@ -563,7 +582,7 @@ async function sendMessage() {
 
     const loadWrap = document.createElement('div');
     loadWrap.className = 'msg-wrap ai';
-    loadWrap.innerHTML = `<div class="msg-meta">DABI</div><div class="msg ai"><i class="fas fa-circle-notch fa-spin"></i> Processing...</div>`;
+    loadWrap.innerHTML = `<div class="msg-meta">DABI AI</div><div class="msg ai"><i class="fas fa-circle-notch fa-spin" style="color:var(--primary)"></i> Düşünüyor...</div>`;
     chatMsgs.appendChild(loadWrap);
     scrollBottom();
 
@@ -576,7 +595,7 @@ async function sendMessage() {
         loadWrap.remove();
         await appendMsg('ai', data.response, true); 
     } catch(e) {
-        loadWrap.querySelector('.msg').innerHTML = '<span style="color:#ff4444">ERROR: NEURAL LINK TIMEOUT</span>';
+        loadWrap.querySelector('.msg').innerHTML = '<span style="color:#ef4444">HATA: SUNUCU BAĞLANTI ZAMAN AŞIMI</span>';
     }
     sendBtn.disabled = false;
 }
@@ -614,7 +633,7 @@ async function handleFile(el) {
     const data = await res.json();
     if (data.success) {
         pendingFileContent = data.content; pendingFileName = data.filename;
-        document.getElementById('file-preview').innerHTML = `<div style="color:var(--neon-blue); font-size:11px; margin-bottom:10px;"><i class="fas fa-file"></i> ${data.filename} <span onclick="clearFile()" style="cursor:pointer; color:red; margin-left:10px;">X</span></div>`;
+        document.getElementById('file-preview').innerHTML = `<div style="color:var(--primary); font-size:11.5px; margin-bottom:10px; display:inline-flex; align-items:center; gap:8px; background:var(--primary-light); padding:6px 12px; border-radius:8px; font-weight:600;"><i class="fas fa-file"></i> ${data.filename} <span onclick="clearFile()" style="cursor:pointer; color:#ef4444; margin-left:8px; font-weight:bold;">&times;</span></div>`;
     }
 }
 function clearFile() { pendingFileContent = ''; pendingFileName = ''; document.getElementById('file-preview').innerHTML = ''; }
