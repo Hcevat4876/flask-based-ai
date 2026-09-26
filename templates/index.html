@@ -601,13 +601,13 @@ async function wipeMemory() {
 inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
 async function handleFile(el) {
-    const file = el.files[data = 0]; if (!file) return; // (korundu)
+    const file = el.files[0]; if (!file) return;
     const fd = new FormData(); fd.append('file', file);
     const res = await fetch('/upload_file', {method: 'POST', body: fd});
     const data = await res.json();
     if (data.success) {
         pendingFileContent = data.content; pendingFileName = data.filename;
-        document.getElementById('file-preview').innerHTML = `<div style="color:var(--primary); font-size:11.5px; margin-bottom:10px; display:inline-flex; align-items:center; gap:8px; background:var(--primary-light); padding:6px 12px; border-radius:8px; font-weight:600;"><i class="fas fa-file"></i> ${data.filename} <span onclick="clearFile()" style="cursor:pointer; color:#ef4444; margin-left:8px; font-weight:bold;">&times;</span></div>`;
+        document.getElementById('file-preview').innerHTML = `<div style="color:var(--neon-blue); font-size:11px; margin-bottom:10px;"><i class="fas fa-file"></i> ${data.filename} <span onclick="clearFile()" style="cursor:pointer; color:red; margin-left:10px;">X</span></div>`;
     }
 }
 function clearFile() { pendingFileContent = ''; pendingFileName = ''; document.getElementById('file-preview').innerHTML = ''; }
