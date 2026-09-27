@@ -108,7 +108,7 @@ SEARCH_TRIGGERS = [
     "kim kazandı", "seçim", "seçim sonuçları", "olay", "oldu mu",
     
     # Ekonomi, Finans, Kripto ve Piyasalar
-    "fiyat", "fiyatı", "kur", "dolar", "euro", "sterlin", "altın", "gram altın", 
+    "fiyat", "fiyatı", "dolar", "euro", "sterlin", "altın", "gram altın", 
     "borsa", "bist", "hisse", "kripto", "bitcoin", "btc", "eth", "ethereum", 
     "enflasyon", "faiz", "piyasa", "piyasalar", "maaş", "asgari ücret",
     
