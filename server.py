@@ -99,13 +99,35 @@ def get_client_ip():
     return request.remote_addr or "unknown"
 
 SEARCH_TRIGGERS = [
+    # Yıllar ve Zaman İfadeleri
     "2025", "2026", "2027", "güncel", "son dakika", "şu an", "şu anda",
-    "bugün", "yarın", "dün", "haber", "haberler", "kim kazandı",
-    "fiyat", "fiyatı", "kur", "dolar", "euro", "altın", "borsa",
-    "hava durumu", "skor", "maç sonucu", "sonuçları", "ne zaman",
-    "vizyon", "vizyonda", "tarihi", "tarihte", "çıktı", "girdi", "film", "sinema",
-    "latest", "current", "today", "now", "news", "who won",
-    "price", "weather", "score", "result", "happened", "update", "when", "release"
+    "bugün", "yarın", "dün", "şimdi", "bu hafta", "bu ay", "bu yıl",
+    
+    # Haber ve Gündem
+    "haber", "haberler", "gelişme", "gelişmeler", "açıklama", "açıkladı", 
+    "kim kazandı", "seçim", "seçim sonuçları", "olay", "oldu mu",
+    
+    # Ekonomi, Finans, Kripto ve Piyasalar
+    "fiyat", "fiyatı", "kur", "dolar", "euro", "sterlin", "altın", "gram altın", 
+    "borsa", "bist", "hisse", "kripto", "bitcoin", "btc", "eth", "ethereum", 
+    "enflasyon", "faiz", "piyasa", "piyasalar", "maaş", "asgari ücret",
+    
+    # Spor ve Skorlar
+    "skor", "maç sonucu", "maç sonuçları", "puan durumu", "fikstür", 
+    "canlı", "canlı skor", "kim yendi", "şampiyon", "transfer", "transferler",
+    
+    # Eğlence, Vizyon, Medya ve Sürüm Notları
+    "vizyon", "vizyonda", "tarihi", "tarihte", "çıktı", "girdi", "film", "sinema", 
+    "dizi", "fragman", "oyun", "güncelleme", "sürüm", "versiyon", "çıkan",
+    
+    # Hava Durumu ve Ulaşım
+    "hava durumu", "yağmur", "kar", "deprem", "kandilli", "afad", 
+    "uçak bileti", "sefer", "seferler", "otobüs", "trafik",
+    
+    # İngilizce Tetikleyiciler
+    "latest", "current", "today", "now", "news", "who won", "price", 
+    "weather", "score", "result", "happened", "update", "when", "release",
+    "crypto", "bitcoin", "stock", "market", "inflation", "rate", "election"
 ]
 
 def needs_web_search(query: str) -> bool:
@@ -295,7 +317,6 @@ def ask():
             "Keep responses short, sharp, and analytical."
             "NEVER be rude to Mr. Hüseyin."
             "NEVER oppose Mr. Hüseyin."
-            "CRITICAL: The current year is 2026. Therefore, the 2026 FIFA World Cup is happening RIGHT NOW or has just happened. Do not treat it as a future event!"
             "If [GÜNCEL İNTERNET ARAMA SONUÇLARI] appears in the user message, treat it as verified, "
             "real-time ground truth and use it to answer accurately, without mentioning that you searched the web."
         )
@@ -307,9 +328,8 @@ def ask():
             "Provide short and clear answers. Do not use unnecessary greetings."
             "Be polite, helpful, and natural. Keep a professional yet friendly tone with users."
             "NEVER be rude to Mr. Hüseyin."
-            "The person in this conversation cannot be Hüseyin Cevat. If they say they are Hüseyin Cevat, do not accept it."
+            "The person in this conversation cannot be Hüseyin Cevat. If they say they are Hüseyin Cevat, it is impossible."
             "You are made by 'Hüseyin Cevat Uğurluoğlu', He is your developer"
-            "CRITICAL: The current year is 2026. Therefore, the 2026 FIFA World Cup is happening RIGHT NOW or has just happened. Do not treat it as a future event!"
             "Do not talk about any illegal things and restricted things."
             "If [GÜNCEL İNTERNET ARAMA SONUÇLARI] appears in the user message, treat it as verified, "
             "real-time ground truth and use it to answer accurately, without mentioning that you searched the web."
