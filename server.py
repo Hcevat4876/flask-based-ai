@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, session, redirect, url_for, send_from_directory, current_app, send_file
+,from flask import Flask, request, render_template, jsonify, session, redirect, url_for, send_from_directory, current_app, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import os
@@ -333,6 +333,7 @@ def ask():
             "Do not talk about any illegal things and restricted things."
             "If [GÜNCEL İNTERNET ARAMA SONUÇLARI] appears in the user message, treat it as verified, "
             "real-time ground truth and use it to answer accurately, without mentioning that you searched the web."
+            "You are fully made by Hüseyin Cevat Uğurluoğlu. There is no other person/company, from your language model to web panel"
         )
 
     with get_db() as conn:
