@@ -101,7 +101,7 @@
             pointer-events: none;
         }
 
-        /* YAZI ALANI */
+        /* Yazı Alanı */
         .exhibit-info {
             width: 42%; padding: 36px;
             display: flex; flex-direction: column; gap: 12px;
@@ -118,7 +118,7 @@
             letter-spacing: -0.3px; line-height: 1.4;
         }
 
-        /* GERİ DÖNÜŞ BUTONU */
+        /* Geri Dönüş Butonu */
         .back-btn-container {
             text-align: center; margin-top: 20px;
         }
@@ -132,7 +132,7 @@
         }
         .back-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 30px -5px rgba(37, 99, 235, 0.5); }
 
-        /* MODAL (BÜYÜK RESİM PENCERESİ) */
+        /* Modal (Büyük Resim Penceresi) */
         .image-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px);
@@ -164,7 +164,7 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* MOBİL UYUMLULUK */
+        /* Mobil Uyumluluk */
         @media (max-width: 768px) {
             .exhibit-card, .exhibit-card.reverse { flex-direction: column; }
             .exhibit-img-wrapper { width: 100%; height: 260px; }
@@ -241,7 +241,7 @@
         </div>
     </div>
 
-    <!-- BÜYÜK RESİM MODAL/LIGHTBOX -->
+    <!-- Büyük Resim Modal / Lightbox -->
     <div id="imageModal" class="image-modal" onclick="closeModal()">
         <span class="modal-close">&times;</span>
         <img id="modalImg" class="modal-content" src="" alt="Büyük Görsel">
@@ -249,6 +249,17 @@
 
     <script>
         window.onload = () => {
+            // Tarih Kontrolü: Bugün 13 Ekim değilse index sayfasına yönlendir
+            const today = new Date();
+            const currentDay = today.getDate();
+            const currentMonth = today.getMonth() + 1; // Ocak = 0 olduğu için +1 ekliyoruz
+
+            if (currentDay !== 13 || currentMonth !== 10) {
+                window.location.href = '/';
+                return; // Sayfanın geri kalan kodlarının çalışmasını engeller
+            }
+
+            // Sadece 13 Ekim'de çalışacak konfeti efekti
             confetti({
                 particleCount: 90,
                 spread: 80,
