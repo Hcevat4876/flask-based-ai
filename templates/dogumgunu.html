@@ -19,7 +19,7 @@
             padding: 40px 20px;
         }
         .museum-container {
-            max-width: 800px; width: 100%;
+            max-width: 900px; width: 100%;
             display: flex; flex-direction: column; gap: 40px;
         }
         .museum-header {
@@ -27,11 +27,11 @@
             animation: fadeInDown 0.6s ease;
         }
         .museum-header h1 {
-            font-size: 28px; font-weight: 700; color: #1e293b;
+            font-size: 32px; font-weight: 700; color: #1e293b;
             letter-spacing: -0.5px; margin-bottom: 8px;
         }
         .museum-header p {
-            font-size: 14px; color: #64748b; font-weight: 500;
+            font-size: 15px; color: #64748b; font-weight: 500;
         }
 
         /* SERGİ KARTI (BÜYÜK VE ZİG-ZAG) */
@@ -39,15 +39,15 @@
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 24px;
-            padding: 24px;
-            display: flex; align-items: center; gap: 32px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            overflow: hidden; /* Resmin köşe kavislerini kartın dışına taşırmaması için */
+            display: flex; align-items: center;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
             transition: transform 0.2s, box-shadow 0.2s;
             animation: fadeInUp 0.5s ease forwards;
         }
         .exhibit-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 20px 30px -10px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 20px 30px -10px rgba(37, 99, 235, 0.12);
             border-color: #cbd5e1;
         }
 
@@ -56,31 +56,31 @@
             flex-direction: row-reverse;
         }
 
-        /* BÜYÜK FOTOĞRAF ALANI */
+        /* BÜYÜK VE DOLDURULMUŞ FOTOĞRAF ALANI */
         .exhibit-img-box {
-            width: 50%; min-width: 50%; height: 260px;
-            background: #f1f5f9; border: 2px dashed #cbd5e1;
-            border-radius: 16px; display: flex; align-items: center; justify-content: center;
-            overflow: hidden; position: relative;
+            width: 55%; min-width: 55%; height: 380px;
+            position: relative;
+            background: #f1f5f9;
         }
         
-        /* Fotoğraf eklendiğinde tam oturması ve orjinal oranını koruması için */
+        /* Resmin boşluk kalmadan alanı tam doldurması için */
         .exhibit-img-box img {
-            width: 100%; height: 100%; object-fit: contain; background: #0f172a;
-        }
-        .img-placeholder-text {
-            font-size: 12px; color: #94a3b8; font-weight: 600; text-align: center; padding: 20px;
+            width: 100%; height: 100%;
+            object-fit: cover; /* Boşluk bırakmadan alanı tam kaplar */
+            object-position: center;
+            display: block;
         }
 
         .exhibit-info {
-            width: 50%;
-            display: flex; flex-direction: column; gap: 8px;
+            width: 45%;
+            padding: 40px;
+            display: flex; flex-direction: column; gap: 12px;
         }
         .exhibit-tag {
-            font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.5px;
+            font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.8px;
         }
         .exhibit-title {
-            font-size: 20px; font-weight: 700; color: #1e293b; letter-spacing: -0.5px; line-height: 1.4;
+            font-size: 24px; font-weight: 700; color: #1e293b; letter-spacing: -0.5px; line-height: 1.3;
         }
 
         /* GERİ DÖNÜŞ BUTONU */
@@ -90,7 +90,7 @@
         .back-btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 10px;
             background: #2563eb; color: #fff; text-decoration: none;
-            padding: 14px 36px; border-radius: 14px; font-size: 14px; font-weight: 700;
+            padding: 16px 40px; border-radius: 16px; font-size: 15px; font-weight: 700;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -108,9 +108,9 @@
 
         /* MOBİL UYUMLULUK */
         @media (max-width: 768px) {
-            .exhibit-card, .exhibit-card.reverse { flex-direction: column; align-items: stretch; }
-            .exhibit-img-box { width: 100%; height: 200px; }
-            .exhibit-info { width: 100%; text-align: center; }
+            .exhibit-card, .exhibit-card.reverse { flex-direction: column; }
+            .exhibit-img-box { width: 100%; height: 280px; }
+            .exhibit-info { width: 100%; padding: 24px; text-align: center; }
         }
     </style>
 </head>
