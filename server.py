@@ -169,6 +169,10 @@ def index():
         return redirect(url_for('login'))
     return render_template('index.html', username=session['username'], is_admin=session.get('is_admin'))
 
+@app.route('/dogumgunu')
+def dogumgunu():
+    return render_template('dogumgunu.html')
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
