@@ -336,9 +336,8 @@ code { font-family: 'JetBrains Mono', monospace !important; font-size: 12px !imp
     
     // Eğer bugün 13 Ekim ise
     if (today.getMonth() === 9 && today.getDate() === 12) {
-        // Kullanıcı müzeden bilerek ana sayfaya dön tuşuna bastıysa tekrar yönlendirme
         if (!sessionStorage.getItem('skip_birthday_redirect')) {
-            window.location.href = "templates/dogumgunu.html";
+            window.location.href = "/dogumgunu"; // Flask rotasına yönlendiriyoruz
         }
     }
 })();
