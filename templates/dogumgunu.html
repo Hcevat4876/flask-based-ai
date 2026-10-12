@@ -166,11 +166,11 @@
             </div>
         </div>
 
-        <!-- Ana Sayfaya Dönüş Tuşu (Kısır döngü engelleyici eklendi) -->
+        <!-- Ana Sayfaya Dönüş Tuşu (Flask kök dizinine yönlendirir ve döngüyü engeller) -->
         <div class="back-btn-container">
-            <a href="index.html" class="back-btn" onclick="sessionStorage.setItem('skip_birthday_redirect', 'true');">
+            <a href="/" class="back-btn" onclick="sessionStorage.setItem('skip_birthday_redirect', 'true');">
                 <i class="fas fa-arrow-left"></i>
-                <span>Ana Sayfaya (index.html) Dön</span>
+                <span>Ana Sayfaya Dön</span>
             </a>
         </div>
     </div>
