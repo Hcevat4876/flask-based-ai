@@ -313,6 +313,7 @@ code { font-family: 'JetBrains Mono', monospace !important; font-size: 12px !imp
     <div class="user-card">
         <div class="user-avatar"><i class="fas fa-user"></i></div>
         <div>
+            <!-- Sol üstteki kullanıcı adı sabit kalıyor ({{ username }} Flask değişkeni) -->
             <div class="user-name" id="displayUsername">{{ username }}</div>
             <div class="user-rank">Authorized User</div>
             <div class="online-dot"><span class="dot-green"></span>Online</div>
@@ -323,7 +324,7 @@ code { font-family: 'JetBrains Mono', monospace !important; font-size: 12px !imp
     <div class="settings-card">
         <label for="sidebarNameInput"><i class="fas fa-user-pen"></i> Kullanıcı Adını Düzenle</label>
         <input type="text" id="sidebarNameInput" placeholder="Adınız...">
-        <button onclick="updateDisplayNameInDB()">İsmi Kaydet & Sohbeti Sıfırla</button>
+        <button onclick="updateDisplayNameInDB()">İsmi hafızaya kaydet ve sıfırla</button>
     </div>
 
     <nav class="sidebar-nav">
@@ -380,13 +381,13 @@ window.onpageshow = function(event) {
     }
 };
 
-// --- VERİTABANINDAN KULLANICI BİLGİSİNİ ÇEKME VE GÜNCELLEME ---
+// --- VERİTABANINDAN SADECE İNPUTU DOLDURMA (SOL ÜSTÜ DEĞİŞTİRMEDEN) ---
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         const res = await fetch('/user_info');
         const data = await res.json();
         if (data.success) {
-            document.getElementById("displayUsername").textContent = data.display_name;
+            // Sol üstteki hesap adını değiştirmeden sadece input alanını veritabanındaki özel isimle dolduruyoruz
             document.getElementById("sidebarNameInput").value = data.display_name;
         }
     } catch(e) {
