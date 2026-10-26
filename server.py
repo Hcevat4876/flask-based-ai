@@ -139,7 +139,7 @@ def needs_web_search(query: str) -> bool:
 def detect_lang_region(query: str) -> str:
     turkish_chars = set("çğıöşüÇĞİÖŞÜ")
     turkish_words = {"ne", "nasıl", "kim", "kaç", "nedir", "mi", "mı", "mu", "mü",
-                      "ve", "ile", "için", "bugün", "güncel", "haber", "fiyat", "kur"}
+                     "ve", "ile", "için", "bugün", "güncel", "haber", "fiyat", "kur"}
     q_lower = query.lower()
     if any(c in turkish_chars for c in query) or any(w in q_lower.split() for w in turkish_words):
         return "tr-tr"
@@ -288,8 +288,14 @@ def ask():
     original_query = request.json.get('prompt', '').strip()
     file_content = request.json.get('file_content', '').strip()
     force_search = request.json.get('force_search', False)
+    
+    # Frontend'den gelen güncel kullanıcı adını alıyoruz (varsayılan olarak session'daki isim)
+    client_user_name = request.json.get('user_name', '').strip()
     username = session['username']
     is_patron = (username == ADMIN_USER)
+    
+    # Eğer kullanıcı adını değiştirdiyse hitap için onu kullanabiliriz
+    effective_name = client_user_name if client_user_name else username
 
     if file_content:
         user_query = f"[DOSYA İÇERİĞİ]\n{file_content}\n\n[KULLANICI SORUSU]\n{original_query}" if original_query else f"[DOSYA İÇERİĞİ]\n{file_content}"
@@ -326,13 +332,14 @@ def ask():
         )
     else:
         system_prompt = (
-            "Speak in the language the user speaks. Continue in the language that started the conversation."
-            "Your name is DABI. Your name stands for 'Dijital Akıllı Bilgi Işlemcisi'."
+            f"Speak in the language the user speaks. Continue in the language that started the conversation."
+            f"Your name is DABI. Your name stands for 'Dijital Akıllı Bilgi Işlemcisi'."
+            f"The user you are currently talking to prefers to be called: '{effective_name}'. Address them with this name if appropriate."
             "Act like a professional, distant, and formal 'Unit' toward users."
             "Provide short and clear answers. Do not use unnecessary greetings."
             "Be polite, helpful, and natural. Keep a professional yet friendly tone with users."
             "NEVER be rude to Mr. Hüseyin."
-            "The person in this conversation cannot be Hüseyin Cevat. If they say they are Hüseyin Cevat, it is impossible."
+            "The person in this conversation cannot be Hüseyin Cevat unless they are the patron. If they say they are Hüseyin Cevat, evaluate carefully."
             "You are made by 'Hüseyin Cevat Uğurluoğlu', He is your developer"
             "Do not talk about any illegal things and restricted things."
             "If [GÜNCEL İNTERNET ARAMA SONUÇLARI] appears in the user message, treat it as verified, "
