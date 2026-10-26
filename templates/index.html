@@ -94,7 +94,7 @@ body {
 .online-dot { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 10px; color: #10b981; font-weight: 500; }
 .dot-green { width: 6px; height: 6px; background: #10b981; border-radius: 50%; box-shadow: 0 0 0 2px rgba(16,185,129,0.2); }
 
-/* KULLANICI ADI GÜNCELLEME KARTI (YENİ) */
+/* KULLANICI ADI GÜNCELLEME KARTI (DB DESTEKLİ) */
 .settings-card {
     background: #f8fafc;
     border: 1px solid var(--border-color);
@@ -244,35 +244,20 @@ main { flex: 1; display: flex; flex-direction: column; overflow: hidden; positio
 pre { padding: 14px; overflow-x: auto; margin: 0; border-radius: 8px; }
 code { font-family: 'JetBrains Mono', monospace !important; font-size: 12px !important; }
 
-/* MODALLAR (İSİM SORMA & GİZLİLİK) */
-#nameModal, #admin-overlay, #privacy-modal {
+/* MODALLAR (GİZLİLİK) */
+#admin-overlay, #privacy-modal {
     display: none; position: fixed; inset: 0; z-index: 200;
     background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px);
     align-items: center; justify-content: center; padding: 20px;
     animation: fadeIn 0.3s ease;
 }
-#nameModal.show, #admin-overlay.show, #privacy-modal.show { display: flex; }
+#admin-overlay.show, #privacy-modal.show { display: flex; }
 
-.name-box, .admin-box, .privacy-box {
+.admin-box, .privacy-box {
     background: #ffffff; border: 1px solid var(--border-color);
     border-radius: 20px; padding: 36px; text-align: center; color: var(--text-main);
     box-shadow: var(--shadow-lg); max-width: 440px; width: 100%;
 }
-.name-box h2 { font-size: 18px; margin-bottom: 10px; color: var(--primary); }
-.name-box p { font-size: 12.5px; color: var(--text-muted); margin-bottom: 20px; }
-.name-box input {
-    width: 100%; padding: 12px; font-size: 13.5px;
-    border: 1px solid var(--border-color); border-radius: 10px;
-    margin-bottom: 16px; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;
-}
-.name-box input:focus { border-color: var(--primary); }
-.name-box button {
-    width: 100%; padding: 12px; background: var(--primary); color: #fff;
-    border: none; border-radius: 10px; font-weight: 700; font-size: 12px;
-    cursor: pointer; transition: 0.2s;
-}
-.name-box button:hover { background: #1d4ed8; }
-
 .privacy-title, .admin-box-title {
     font-size: 16px; font-weight: 700; color: var(--primary);
     margin-bottom: 14px; letter-spacing: -0.5px;
@@ -293,16 +278,6 @@ code { font-family: 'JetBrains Mono', monospace !important; font-size: 12px !imp
 </style>
 </head>
 <body>
-
-<!-- İLK GİRİŞ İSİM SORMA MODALI -->
-<div id="nameModal">
-    <div class="name-box">
-        <h2>Dabi AI'ya Hoş Geldiniz! 👋</h2>
-        <p>Sizlere daha özel ve doğru bir deneyim sunabilmemiz için adınızı öğrenebilir miyiz?</p>
-        <input type="text" id="initialNameInput" placeholder="Adınızı girin..." autocomplete="off">
-        <button onclick="saveInitialName()">Devam Et</button>
-    </div>
-</div>
 
 <!-- GİZLİLİK POLİTİKASI ONAY MODALI -->
 <div id="privacy-modal">
@@ -344,11 +319,11 @@ code { font-family: 'JetBrains Mono', monospace !important; font-size: 12px !imp
         </div>
     </div>
 
-    <!-- YENİ: İSİM GÜNCELLEME ALANI -->
+    <!-- DB DESTEKLİ İSİM DÜZENLEME KARTI -->
     <div class="settings-card">
         <label for="sidebarNameInput"><i class="fas fa-user-pen"></i> Kullanıcı Adını Düzenle</label>
         <input type="text" id="sidebarNameInput" placeholder="Adınız...">
-        <button onclick="updateUserNameAndReset()">İsmi Güncelle & Sohbeti Sıfırla</button>
+        <button onclick="updateDisplayNameInDB()">İsmi Kaydet & Sohbeti Sıfırla</button>
     </div>
 
     <nav class="sidebar-nav">
@@ -390,11 +365,9 @@ code { font-family: 'JetBrains Mono', monospace !important; font-size: 12px !imp
 <script>
 (function checkBirthdayRedirect() {
     const today = new Date();
-    
-    // Eğer bugün 13 Ekim ise
     if (today.getMonth() === 9 && today.getDate() === 13) {
         if (!sessionStorage.getItem('skip_birthday_redirect')) {
-            window.location.href = "/dogumgunu"; // Flask rotasına yönlendiriyoruz
+            window.location.href = "/dogumgunu";
         }
     }
 })();
@@ -407,54 +380,45 @@ window.onpageshow = function(event) {
     }
 };
 
-// --- YEREL İSİM (LOCALSTORAGE) YÖNETİMİ ---
-document.addEventListener("DOMContentLoaded", () => {
-    let savedName = localStorage.getItem("dabi_user_name");
-    const nameModal = document.getElementById("nameModal");
-    const displayUsername = document.getElementById("displayUsername");
-    const sidebarNameInput = document.getElementById("sidebarNameInput");
-
-    if (!savedName) {
-        // Eğer daha önce isim girilmediyse modalı göster
-        nameModal.classList.add("show");
-    } else {
-        // İsim varsa arayüze ve inputa yansıt
-        displayUsername.textContent = savedName;
-        sidebarNameInput.value = savedName;
+// --- VERİTABANINDAN KULLANICI BİLGİSİNİ ÇEKME VE GÜNCELLEME ---
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const res = await fetch('/user_info');
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById("displayUsername").textContent = data.display_name;
+            document.getElementById("sidebarNameInput").value = data.display_name;
+        }
+    } catch(e) {
+        console.error("Kullanıcı bilgisi alınamadı");
     }
 });
 
-function saveInitialName() {
-    const inputVal = document.getElementById("initialNameInput").value.trim();
-    if (inputVal) {
-        localStorage.setItem("dabi_user_name", inputVal);
-        document.getElementById("nameModal").classList.remove("show");
-        location.reload(); // Değişikliğin hemen oturması için
-    } else {
-        alert("Lütfen geçerli bir isim girin.");
-    }
-}
-
-async function updateUserNameAndReset() {
+async function updateDisplayNameInDB() {
     const newName = document.getElementById("sidebarNameInput").value.trim();
-    if (newName) {
-        // 1. Yeni ismi kaydet
-        localStorage.setItem("dabi_user_name", newName);
-        
-        // 2. Sohbet geçmişini sıfırla (wipeMemory fonksiyonunu tetikler)
-        try {
-            await fetch('/reset', { method: 'POST' });
-        } catch(e) {
-            console.error("Sıfırlama hatası:", e);
-        }
+    if (!newName) {
+        alert("İsim boş olamaz!");
+        return;
+    }
 
-        alert("İsim güncellendi ve yeni bir oturum için sohbet geçmişi sıfırlandı!");
-        window.location.href = window.location.origin + window.location.pathname + '?cache_bust=' + Date.now();
-    } else {
-        alert("Kullanıcı adı boş bırakılamaz!");
+    try {
+        const res = await fetch('/update_display_name', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ display_name: newName })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert("İsim veritabanına kaydedildi ve sohbet geçmişi sıfırlandı!");
+            window.location.href = window.location.origin + window.location.pathname + '?cache_bust=' + Date.now();
+        } else {
+            alert("Hata: " + (data.error || "Güncellenemedi"));
+        }
+    } catch(e) {
+        alert("Sunucu bağlantı hatası.");
     }
 }
-// ------------------------------------------
+// -----------------------------------------------------------
 
 async function checkAuth() {
     try {
@@ -465,7 +429,6 @@ async function checkAuth() {
             return;
         }
         
-        // Gizlilik politikası kontrolü (Mevcut/Açık oturumlar için)
         const pRes = await fetch('/privacy_status');
         const pData = await pRes.json();
         if (!pData.accepted) {
@@ -679,17 +642,10 @@ async function sendMessage() {
     chatMsgs.appendChild(loadWrap);
     scrollBottom();
 
-    // Kullanıcının localStorage'da kayıtlı olan adını isteğe ekliyoruz
-    const currentUserName = localStorage.getItem("dabi_user_name") || "Kullanıcı";
-
     try {
         const res = await fetch('/ask', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                prompt: text, 
-                file_content: fc,
-                user_name: currentUserName // Backend isterseniz buradan okuyabilir
-            })
+            body: JSON.stringify({prompt: text, file_content: fc})
         });
         const data = await res.json();
         loadWrap.remove();
