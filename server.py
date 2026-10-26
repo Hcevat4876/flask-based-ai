@@ -53,7 +53,8 @@ def init_db():
                     is_banned BOOLEAN DEFAULT FALSE,
                     last_ip TEXT DEFAULT '',
                     admin_message TEXT DEFAULT '',
-                    privacy_accepted BOOLEAN DEFAULT FALSE
+                    privacy_accepted BOOLEAN DEFAULT FALSE,
+                    display_name TEXT DEFAULT ''
                 )
             """)
             cur.execute("""
@@ -76,6 +77,7 @@ def init_db():
                 ("last_ip", "TEXT DEFAULT ''"),
                 ("admin_message", "TEXT DEFAULT ''"),
                 ("privacy_accepted", "BOOLEAN DEFAULT FALSE"),
+                ("display_name", "TEXT DEFAULT ''"),
             ]:
                 cur.execute(f"""
                     DO $$ BEGIN
@@ -86,8 +88,8 @@ def init_db():
             cur.execute("SELECT username FROM users WHERE username = %s", (ADMIN_USER,))
             if not cur.fetchone():
                 cur.execute(
-                    "INSERT INTO users (username, password, is_admin, privacy_accepted) VALUES (%s, %s, TRUE, TRUE)",
-                    (ADMIN_USER, generate_password_hash(ADMIN_PASS))
+                    "INSERT INTO users (username, password, is_admin, privacy_accepted, display_name) VALUES (%s, %s, TRUE, TRUE, %s)",
+                    (ADMIN_USER, generate_password_hash(ADMIN_PASS), ADMIN_USER)
                 )
             conn.commit()
 
@@ -99,32 +101,19 @@ def get_client_ip():
     return request.remote_addr or "unknown"
 
 SEARCH_TRIGGERS = [
-    # Yıllar ve Zaman İfadeleri
     "2025", "2026", "2027", "güncel", "son dakika", "şu an", "şu anda",
     "bugün", "yarın", "dün", "şimdi", "bu hafta", "bu ay", "bu yıl",
-    
-    # Haber ve Gündem
     "haber", "haberler", "gelişme", "gelişmeler", "açıklama", "açıkladı", 
     "kim kazandı", "seçim", "seçim sonuçları", "olay", "oldu mu",
-    
-    # Ekonomi, Finans, Kripto ve Piyasalar
     "fiyat", "fiyatı", "dolar", "euro", "sterlin", "altın", "gram altın", 
     "borsa", "bist", "hisse", "kripto", "bitcoin", "btc", "eth", "ethereum", 
     "enflasyon", "faiz", "piyasa", "piyasalar", "maaş", "asgari ücret",
-    
-    # Spor ve Skorlar
     "skor", "maç sonucu", "maç sonuçları", "puan durumu", "fikstür", 
     "canlı", "canlı skor", "kim yendi", "şampiyon", "transfer", "transferler",
-    
-    # Eğlence, Vizyon, Medya ve Sürüm Notları
     "vizyon", "vizyonda", "tarihi", "tarihte", "çıktı", "girdi", "film", "sinema", 
     "dizi", "fragman", "oyun", "güncelleme", "sürüm", "versiyon", "çıkan",
-    
-    # Hava Durumu ve Ulaşım
     "hava durumu", "yağmur", "kar", "deprem", "kandilli", "afad", 
     "uçak bileti", "sefer", "seferler", "otobüs", "trafik",
-    
-    # İngilizce Tetikleyiciler
     "latest", "current", "today", "now", "news", "who won", "price", 
     "weather", "score", "result", "happened", "update", "when", "release",
     "crypto", "bitcoin", "stock", "market", "inflation", "rate", "election"
@@ -218,8 +207,8 @@ def register():
                 if cur.fetchone():
                     return render_template('register.html', error="ERR_409: Bu kullanıcı adı zaten mevcut.")
                 cur.execute(
-                    "INSERT INTO users (username, password, is_admin, privacy_accepted) VALUES (%s, %s, FALSE, FALSE)",
-                    (u, generate_password_hash(p))
+                    "INSERT INTO users (username, password, is_admin, privacy_accepted, display_name) VALUES (%s, %s, FALSE, FALSE, %s)",
+                    (u, generate_password_hash(p), u)
                 )
                 conn.commit()
         return redirect(url_for('login'))
@@ -229,6 +218,33 @@ def register():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.route('/user_info')
+def user_info():
+    if 'username' not in session:
+        return jsonify({"success": False})
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT display_name FROM users WHERE username = %s", (session['username'],))
+            user = cur.fetchone()
+            name = user['display_name'] if user and user['display_name'] else session['username']
+            return jsonify({"success": True, "display_name": name, "username": session['username']})
+
+@app.route('/update_display_name', methods=['POST'])
+def update_display_name():
+    if 'username' not in session:
+        return jsonify({"success": False})
+    new_name = request.json.get('display_name', '').strip()
+    if not new_name:
+        return jsonify({"success": False, "error": "İsim boş olamaz"})
+    
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET display_name = %s WHERE username = %s", (new_name, session['username']))
+            # İsim değiştiğinde sohbet geçmişini sıfırlama talebiniz gereği geçmişi temizliyoruz
+            cur.execute("DELETE FROM chat_history WHERE username = %s", (session['username'],))
+            conn.commit()
+    return jsonify({"success": True})
 
 @app.route('/privacy_status')
 def privacy_status():
@@ -288,14 +304,15 @@ def ask():
     original_query = request.json.get('prompt', '').strip()
     file_content = request.json.get('file_content', '').strip()
     force_search = request.json.get('force_search', False)
-    
-    # Frontend'den gelen güncel kullanıcı adını alıyoruz (varsayılan olarak session'daki isim)
-    client_user_name = request.json.get('user_name', '').strip()
     username = session['username']
     is_patron = (username == ADMIN_USER)
-    
-    # Eğer kullanıcı adını değiştirdiyse hitap için onu kullanabiliriz
-    effective_name = client_user_name if client_user_name else username
+
+    # Kullanıcının veritabanındaki kayıtlı adını alıyoruz
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT display_name FROM users WHERE username = %s", (username,))
+            row = cur.fetchone()
+            effective_name = row['display_name'] if row and row['display_name'] else username
 
     if file_content:
         user_query = f"[DOSYA İÇERİĞİ]\n{file_content}\n\n[KULLANICI SORUSU]\n{original_query}" if original_query else f"[DOSYA İÇERİĞİ]\n{file_content}"
